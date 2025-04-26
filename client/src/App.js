@@ -1,23 +1,43 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect, useState } from 'react';
+import { getPlates, createPlate } from './api/plates';
 
 function App() {
+  const [plates, setPlates] = useState([]);
+  const [plate, setPlate] = useState('');
+  const [message, setMessage] = useState('');
+
+  const loadPlates = async () => {
+    const res = await getPlates();
+    setPlates(res.data);
+  };
+
+  useEffect(() => {
+    loadPlates();
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await createPlate({ plate, message });
+    setPlate('');
+    setMessage('');
+    loadPlates();
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      <form onSubmit={handleSubmit}>
+        <input value={plate} onChange={(e) => setPlate(e.target.value)} placeholder="Plate" />
+        <input value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message" />
+        <button type="submit">Send</button>
+      </form>
+
+      <ul>
+        {plates.map((p) => (
+          <li key={p._id}>
+            <strong>{p.plate}:</strong> {p.message}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
