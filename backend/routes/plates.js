@@ -37,5 +37,21 @@ router.get('/:id', async (req, res) => {
     }
   });
   
+  router.post('/claim', async (req, res) => {
+    try {
+      const { plate, userId } = req.body;
+  
+      const existing = await Plate.findOne({ plate });
+      if (existing) {
+        return res.status(400).json({ error: 'Plate already claimed' });
+      }
+  
+      const newPlate = await Plate.create({ plate, userId });
+      res.status(201).json(newPlate);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 
+  
 module.exports = router;
