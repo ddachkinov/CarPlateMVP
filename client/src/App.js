@@ -12,6 +12,8 @@ function App() {
   const [success, setSuccess] = useState(false);
   const [search, setSearch] = useState('');
   const [messages, setMessages] = useState([]); // ✅ Safe default to empty array
+  const [error, setError] = useState('');
+
 
   const loadPlates = async () => {
     setLoading(true);
@@ -32,20 +34,31 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!plate.trim() || !message.trim()) {
-      alert('Please fill in both Plate and Message!');
+    if (plate.trim().length < 2 || message.trim().length < 2) {
+      alert('Plate and Message must be at least 2 characters!');
       return;
     }
+  
     setLoading(true);
     try {
       const senderId = localStorage.getItem('userId') || 'guest';
-      
-      console.log('Creating plate:', plate, senderId);
-      await claimPlate({ plate, userId: senderId });
-      console.log('✅ Plate created');
+  
+      const plateExists = plates.some((p) => p.plate.toLowerCase() === plate.trim().toLowerCase());
+  
+      if (!plateExists) {
+        console.log('Claiming new plate:', plate, senderId);
+        await claimPlate({ plate: plate.trim(), userId: senderId });
+        console.log('✅ Plate claimed');
+      } else {
+        console.log('Plate already exists:', plate);
+      }
   
       console.log('Sending message:', plate, message, senderId);
-      await sendMessage({ plate, message, senderId });
+      await sendMessage({ 
+        plate: plate.trim(), 
+        message: message.trim(), 
+        senderId 
+      });
       console.log('✅ Message sent');
   
       await loadPlates();
@@ -57,10 +70,12 @@ function App() {
       setTimeout(() => setSuccess(false), 2000);
     } catch (err) {
       console.error('❌ Error during submit:', err.response ? err.response.data : err.message);
-      alert('Error sending message');
+      setError('❌ Failed to send message. Please try again.');
+      setTimeout(() => setError(''), 3000);
     }
     setLoading(false);
   };
+  
 
   return (
     <div>
@@ -101,15 +116,28 @@ function App() {
       </div>
 
       {loading ? (
-        <p>Loading...</p>
-      ) : (
-        <PlateList
-          plates={plates.filter((p) =>
-            p.plate.toLowerCase().includes(search.toLowerCase())
-          )}
-          messages={messages}
-        />
+  <p>Loading...</p>
+) : (
+  <>
+    {error && (
+      <p
+        style={{
+          color: 'red',
+          opacity: error ? 1 : 0,
+          transition: 'opacity 0.5s ease-in-out',
+        }}
+      >
+        {error}
+      </p>
+    )}
+    <PlateList
+      plates={plates.filter((p) =>
+        p.plate.toLowerCase().includes(search.toLowerCase())
       )}
+      messages={messages}
+    />
+  </>
+)}
     </div>
   );
 }
