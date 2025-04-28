@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getPlates, createPlate } from './api/plates';
+import { getPlates, sendMessage } from './api/plates';
 import PlateForm from './PlateForm';
 import PlateList from './PlateList';
 import './App.css';
@@ -32,13 +32,15 @@ function App() {
     }
     setLoading(true);
     try {
-      await createPlate({ plate, message });
+      const senderId = localStorage.getItem('userId') || 'guest';
+      await sendMessage({ plate, message, senderId }); // 🔥 use sendMessage here
       setPlate('');
       setMessage('');
       await loadPlates();
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
     } catch (err) {
+      console.error(err);
       alert('Error sending message');
     }
     setLoading(false);

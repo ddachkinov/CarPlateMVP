@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Plate = require('../models/Plate');
+const Message = require('../models/Message');
 
 // POST /api/plates
 router.post('/', async (req, res) => {
@@ -52,6 +53,22 @@ router.get('/:id', async (req, res) => {
       res.status(500).json({ error: err.message });
     }
   });
+
+// POST /api/plates/send
+router.post('/send', async (req, res) => {
+  try {
+    const { plate, message, senderId } = req.body;
+
+    if (!plate || !message || !senderId) {
+      return res.status(400).json({ error: 'Missing fields' });
+    }
+
+    const newMessage = await Message.create({ plate, message, senderId });
+    res.status(201).json(newMessage);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
   
 module.exports = router;
