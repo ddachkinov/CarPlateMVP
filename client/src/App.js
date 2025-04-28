@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getPlates, sendMessage } from './api/plates';
+import { getPlates, claimPlate, sendMessage, getMessages } from './api/plates';
 import PlateForm from './PlateForm';
 import PlateList from './PlateList';
 import './App.css';
@@ -11,7 +11,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [search, setSearch] = useState('');
-
+  const [messages, setMessages] = useState([]); // ✅ Safe default to empty array
 
   const loadPlates = async () => {
     setLoading(true);
@@ -20,8 +20,14 @@ function App() {
     setLoading(false);
   };
 
+  const loadMessages = async () => {
+    const res = await getMessages();
+    setMessages(res.data);
+  };
+
   useEffect(() => {
     loadPlates();
+    loadMessages(); // ✅ Load both on page open
   }, []);
 
   const handleSubmit = async (e) => {
@@ -33,14 +39,24 @@ function App() {
     setLoading(true);
     try {
       const senderId = localStorage.getItem('userId') || 'guest';
-      await sendMessage({ plate, message, senderId }); // 🔥 use sendMessage here
+      
+      console.log('Creating plate:', plate, senderId);
+      await claimPlate({ plate, userId: senderId });
+      console.log('✅ Plate created');
+  
+      console.log('Sending message:', plate, message, senderId);
+      await sendMessage({ plate, message, senderId });
+      console.log('✅ Message sent');
+  
+      await loadPlates();
+      await loadMessages();
+  
       setPlate('');
       setMessage('');
-      await loadPlates();
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
     } catch (err) {
-      console.error(err);
+      console.error('❌ Error during submit:', err.response ? err.response.data : err.message);
       alert('Error sending message');
     }
     setLoading(false);
@@ -69,27 +85,31 @@ function App() {
         loading={loading}
       />
 
-<div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
-  <input
-    type="text"
-    placeholder="Search plates..."
-    value={search}
-    onChange={(e) => setSearch(e.target.value)}
-    style={{
-      padding: '0.5rem',
-      width: '300px',
-      borderRadius: '8px',
-      border: '1px solid #ccc'
-    }}
-  />
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+        <input
+          type="text"
+          placeholder="Search plates..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            padding: '0.5rem',
+            width: '300px',
+            borderRadius: '8px',
+            border: '1px solid #ccc'
+          }}
+        />
+      </div>
 
-</div>
-      {loading ? <p>Loading...</p> : <PlateList
-  plates={plates.filter((p) =>
-    p.plate.toLowerCase().includes(search.toLowerCase())
-  )}
-/>
-  }
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
+        <PlateList
+          plates={plates.filter((p) =>
+            p.plate.toLowerCase().includes(search.toLowerCase())
+          )}
+          messages={messages}
+        />
+      )}
     </div>
   );
 }
