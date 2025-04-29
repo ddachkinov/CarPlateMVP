@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { getPlates, claimPlate, sendMessage, getMessages } from './api/plates';
+import { getPlates, sendMessage, getMessages } from './api/plates';
 import PlateForm from './PlateForm';
 import PlateList from './PlateList';
+import axios from 'axios'; 
 import './App.css';
+
 
 function App() {
   const [plates, setPlates] = useState([]);
@@ -43,22 +45,16 @@ function App() {
     try {
       const senderId = localStorage.getItem('userId') || 'guest';
   
-      const plateExists = plates.some((p) => p.plate.toLowerCase() === plate.trim().toLowerCase());
+      // 🔵 1. REGISTER the plate in MongoDB backend
+      await axios.post('/api/register', { plate: plate.trim() });
   
-      if (!plateExists) {
-        console.log('Claiming new plate:', plate, senderId);
-        await claimPlate({ plate: plate.trim(), userId: senderId });
-        console.log('✅ Plate claimed');
-      } else {
-        console.log('Plate already exists:', plate);
-      }
-  
-      console.log('Sending message:', plate, message, senderId);
-      await sendMessage({ 
-        plate: plate.trim(), 
-        message: message.trim(), 
-        senderId 
+      // 🟠 2. Then SEND the message
+      await sendMessage({
+        plate: plate.trim(),
+        message: message.trim(),
+        senderId
       });
+  
       console.log('✅ Message sent');
   
       await loadPlates();
@@ -75,6 +71,7 @@ function App() {
     }
     setLoading(false);
   };
+  
   
 
   return (
