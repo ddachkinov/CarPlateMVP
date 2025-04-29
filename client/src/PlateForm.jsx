@@ -90,7 +90,6 @@ const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading
     <input
       type="file"
       accept="image/*"
-      capture="environment"
       onChange={handleImageUpload}
       style={{ display: 'none' }}
     />
