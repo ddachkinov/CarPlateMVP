@@ -1,8 +1,18 @@
 import React, { useState } from 'react';
-import axios from 'axios'; 
+import axios from 'axios'; // ✅ Needed
 
 const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading }) => {
   const [loadingOCR, setLoadingOCR] = useState(false);
+
+  const isVerified = localStorage.getItem('verified') === 'true'; // ✅ Check verified from localStorage
+
+  const predefinedMessages = [
+    "Your headlights are on",
+    "Your car is blocking another car",
+    "Your window is open",
+    "Your alarm is ringing",
+    "Your tire looks flat"
+  ];
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -15,8 +25,7 @@ const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading
       detect_region: false
     }));
 
-
-    setLoadingOCR(true); // Show loading text
+    setLoadingOCR(true);
 
     try {
       const res = await axios.post(
@@ -30,8 +39,6 @@ const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading
         }
       );
 
-      console.log('Plate Recognizer Response:', res.data);
-
       if (res.data.results.length > 0) {
         const plateNumber = res.data.results[0].plate.toUpperCase();
         setPlate(plateNumber);
@@ -39,62 +46,58 @@ const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading
         alert('No plate detected. Please try another photo.');
       }
     } catch (error) {
-      console.error('Full error object:', error);
-      console.log('Token:', process.env.REACT_APP_PLATE_RECOGNIZER_TOKEN);
-      const message = error.response?.data?.error || 'Failed to recognize plate. Please try again.';
-      alert(message);
-    }
-    
-    
-    finally {
-      setLoadingOCR(false); // Always stop spinner
+      console.error('Plate recognition failed:', error);
+      alert('Failed to recognize plate. Please try again.');
+    } finally {
+      setLoadingOCR(false);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-     <div style={{
-  display: 'flex',
-  gap: '0.5rem',
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginBottom: '1rem'
-}}>
-  <input
-    type="text"
-    placeholder="Plate"
-    value={plate}
-    onChange={(e) => setPlate(e.target.value)}
-    style={{
-      padding: '0.5rem',
-      borderRadius: '8px',
-      border: '1px solid #ccc',
-      width: '200px'
-    }}
-  />
+      {/* Plate + Upload */}
+      <div style={{
+        display: 'flex',
+        gap: '0.5rem',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: '1rem'
+      }}>
+        <input
+          type="text"
+          placeholder="Plate"
+          value={plate}
+          onChange={(e) => setPlate(e.target.value)}
+          style={{
+            padding: '0.5rem',
+            borderRadius: '8px',
+            border: '1px solid #ccc',
+            width: '200px'
+          }}
+        />
 
-  <label style={{
-    border: '1px solid #007bff',
-    background: 'white',
-    color: '#007bff',
-    padding: '0.5rem',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '40px',
-    height: '40px'
-  }}>
-    📷
-    <input
-      type="file"
-      accept="image/*"
-      onChange={handleImageUpload}
-      style={{ display: 'none' }}
-    />
-  </label>
-</div>
+        <label style={{
+          border: '1px solid #007bff',
+          background: 'white',
+          color: '#007bff',
+          padding: '0.5rem',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '40px',
+          height: '40px'
+        }}>
+          📷
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            style={{ display: 'none' }}
+          />
+        </label>
+      </div>
 
       {loadingOCR && (
         <p style={{ color: '#007bff', fontSize: '0.9rem', marginBottom: '1rem' }}>
@@ -102,20 +105,44 @@ const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading
         </p>
       )}
 
-      <textarea
-        placeholder="Message"
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        style={{
-          padding: '0.5rem',
-          width: '90%',
-          maxWidth: '600px',
-          borderRadius: '8px',
-          border: '1px solid #ccc',
-          height: '100px',
-          marginBottom: '1rem'
-        }}
-      />
+      {/* Message field */}
+      {isVerified ? (
+        <textarea
+          placeholder="Write your message..."
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          style={{
+            padding: '0.5rem',
+            width: '90%',
+            maxWidth: '600px',
+            borderRadius: '8px',
+            border: '1px solid #ccc',
+            height: '100px',
+            marginBottom: '1rem'
+          }}
+        />
+      ) : (
+        <select
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          style={{
+            padding: '0.5rem',
+            width: '90%',
+            maxWidth: '600px',
+            borderRadius: '8px',
+            border: '1px solid #ccc',
+            height: '50px',
+            marginBottom: '1rem'
+          }}
+        >
+          <option value="">Select a message...</option>
+          {predefinedMessages.map((msg, idx) => (
+            <option key={idx} value={msg}>
+              {msg}
+            </option>
+          ))}
+        </select>
+      )}
 
       <button
         type="submit"

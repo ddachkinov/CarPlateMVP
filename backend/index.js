@@ -23,6 +23,9 @@ app.use('/api/plates', plateRoutes);
 const registerRoute = require('./routes/register');
 app.use('/api/register', registerRoute);
 
+const messageRoute = require('./routes/message');
+app.use('/api/message', messageRoute);
+
 // Test route
 app.get('/', (req, res) => {
   res.send('API is working');

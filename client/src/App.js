@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { getPlates, sendMessage, getMessages } from './api/plates';
+import { getPlates, sendMessage, getMessages, registerPlate } from './api/plates';
 import PlateForm from './PlateForm';
 import PlateList from './PlateList';
-import axios from 'axios'; 
 import './App.css';
 
 
@@ -45,18 +44,17 @@ function App() {
     try {
       const senderId = localStorage.getItem('userId') || 'guest';
   
-      // 🔵 1. REGISTER the plate in MongoDB backend
-      await axios.post('/api/register', { plate: plate.trim() });
+      console.log('Registering plate:', plate);
+      await registerPlate({ plate: plate.trim() });
   
-      // 🟠 2. Then SEND the message
+      console.log('Sending message:', { plate, message, senderId });
       await sendMessage({
         plate: plate.trim(),
         message: message.trim(),
         senderId
       });
   
-      console.log('✅ Message sent');
-  
+      console.log('✅ Message sent successfully!');
       await loadPlates();
       await loadMessages();
   
@@ -65,12 +63,14 @@ function App() {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
     } catch (err) {
-      console.error('❌ Error during submit:', err.response ? err.response.data : err.message);
+      console.error('❌ Error during submit:', err.response?.data || err.message);
       setError('❌ Failed to send message. Please try again.');
       setTimeout(() => setError(''), 3000);
     }
+  
     setLoading(false);
   };
+  
   
   
 
