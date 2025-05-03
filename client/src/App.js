@@ -3,6 +3,7 @@ import { getPlates, sendMessage, getMessages, registerPlate } from './api/plates
 import PlateForm from './PlateForm';
 import PlateList from './PlateList';
 import './App.css';
+import { claimPlate } from './api/plates';
 
 
 function App() {
@@ -45,7 +46,7 @@ function App() {
       const senderId = localStorage.getItem('userId') || 'guest';
   
       console.log('Registering plate:', plate);
-      await registerPlate({ plate: plate.trim() });
+      await claimPlate({ plate: plate.trim(), userId: senderId });
   
       console.log('Sending message:', { plate, message, senderId });
       await sendMessage({
