@@ -14,20 +14,60 @@ const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading
     "Your tire looks flat"
   ];
 
+  const resizeImage = (file, maxWidth = 1024, quality = 0.7) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+  
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+  
+          const scaleFactor = maxWidth / img.width;
+          canvas.width = Math.min(maxWidth, img.width);
+          canvas.height = img.height * scaleFactor;
+  
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) return reject(new Error('Compression failed'));
+              const resizedFile = new File([blob], file.name, { type: 'image/jpeg' });
+              resolve(resizedFile);
+            },
+            'image/jpeg',
+            quality // 0 to 1
+          );
+        };
+        img.src = event.target.result;
+      };
+  
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  };
+  
+
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    const formData = new FormData();
-    formData.append('upload', file);
-    formData.append('config', JSON.stringify({
-      region: 'none',
-      detect_region: false
-    }));
-
+  
     setLoadingOCR(true);
-
+  
     try {
+      const MAX_SIZE = 3 * 1024 * 1024; // 3MB in bytes
+      const resizedFile = file.size > MAX_SIZE ? await resizeImage(file) : file;
+      console.log(`Original: ${file.size / 1024} KB`);
+      console.log(`Resized: ${resizedFile.size / 1024} KB`);
+  
+      const formData = new FormData();
+      formData.append('upload', resizedFile);
+      formData.append('config', JSON.stringify({
+        region: 'none',
+        detect_region: false
+      }));
+  
       const res = await axios.post(
         'https://api.platerecognizer.com/v1/plate-reader/',
         formData,
