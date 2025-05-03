@@ -20,11 +20,11 @@ mongoose.connect(process.env.MONGO_URI, {
 const plateRoutes = require('./routes/plates');
 app.use('/api/plates', plateRoutes);
 
-const registerRoute = require('./routes/register');
-app.use('/api/register', registerRoute);
-
 const messageRoute = require('./routes/message');
 app.use('/api/message', messageRoute);
+
+const userRoutes = require('./routes/user');
+app.use('/api/user', userRoutes);
 
 // Test route
 app.get('/', (req, res) => {

@@ -1,21 +1,11 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  plate: {
-    type: String,
-    required: true,
-    unique: true,
-    uppercase: true,
-    trim: true,
-  },
-  trustScore: {
-    type: Number,
-    default: 100, // Starting trust score (out of 100)
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  }
+  userId: { type: String, required: true, unique: true },
+  verified: { type: Boolean, default: false },
+  trustScore: { type: Number, default: 100 },
+  createdAt: { type: Date, default: Date.now }
 });
 
 module.exports = mongoose.model('User', userSchema);
+
