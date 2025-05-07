@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { getPlates, sendMessage, getMessages, registerPlate } from './api/plates';
+import { getPlates, sendMessage, getMessages, getOwnedPlates } from './api/plates';
 import PlateForm from './PlateForm';
 import PlateList from './PlateList';
 import './App.css';
 import { claimPlate } from './api/plates';
+import OwnedPlates from './OwnedPlates';
 
 
 function App() {
@@ -15,7 +16,22 @@ function App() {
   const [search, setSearch] = useState('');
   const [messages, setMessages] = useState([]); // ✅ Safe default to empty array
   const [error, setError] = useState('');
+  const [ownedPlates, setOwnedPlates] = useState([]);
 
+  useEffect(() => {
+    let userId = localStorage.getItem('userId');
+    if (!userId) {
+      userId = 'user-' + Math.random().toString(36).substring(2, 10);
+      localStorage.setItem('userId', userId);
+    }
+  
+    fetch(`${process.env.REACT_APP_API_URL}/user/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId })
+    }).catch(console.error);
+  }, []);
+  
 
   const loadPlates = async () => {
     setLoading(true);
@@ -27,12 +43,26 @@ function App() {
   const loadMessages = async () => {
     const res = await getMessages();
     setMessages(res.data);
+  }; 
+
+  const loadOwnedPlates = async () => {
+    const userId = localStorage.getItem('userId');
+    if (!userId) return;
+    try {
+      const res = await getOwnedPlates(userId);
+      setOwnedPlates(res.data);
+      console.log('👀 Owned plates response:', res.data);
+    } catch (err) {
+      console.error('❌ Failed to load owned plates:', err.message);
+    }
   };
 
   useEffect(() => {
     loadPlates();
-    loadMessages(); // ✅ Load both on page open
+   loadMessages();
+   loadOwnedPlates();
   }, []);
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -128,6 +158,20 @@ function App() {
         {error}
       </p>
     )}
+{/* 
+    {ownedPlates.length > 0 && (
+  <div style={{ marginBottom: '2rem' }}>
+    <h3>🚘 Your Claimed Plates</h3>
+    <ul style={{ paddingLeft: '1rem' }}>
+      {ownedPlates.map((p) => (
+        <li key={p._id} style={{ fontSize: '0.95rem' }}>{p.plate}</li>
+      ))}
+    </ul>
+  </div>
+)} */}
+
+<OwnedPlates plates={ownedPlates} />
+
     <PlateList
       plates={plates.filter((p) =>
         p.plate.toLowerCase().includes(search.toLowerCase())
