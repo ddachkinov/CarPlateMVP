@@ -27,11 +27,6 @@ const PlateList = ({ plates, messages }) => {
     localStorage.setItem('reportedSenders', JSON.stringify(updated));
   };
 
-  useEffect(() => {
-    console.log('🔎 Normalized Plates:', plates.map(p => normalizePlate(p.plate)));
-    console.log('📨 Normalized Messages:', messages.map(m => ({ ...m, plate: normalizePlate(m.plate) })));
-  }, [plates, messages]);
-
   return (
     <ul>
       {plates.map((p) => {
