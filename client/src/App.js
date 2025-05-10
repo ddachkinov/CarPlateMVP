@@ -5,6 +5,8 @@ import PlateList from './PlateList';
 import './App.css';
 import { claimPlate } from './api/plates';
 import OwnedPlates from './OwnedPlates';
+import UserProfile from './UserProfile';
+import { getUserMessages } from './api/plates';
 
 
 function App() {
@@ -14,9 +16,10 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [search, setSearch] = useState('');
-  const [messages, setMessages] = useState([]); // ✅ Safe default to empty array
+  // const [messages, setMessages] = useState([]); // ✅ Safe default to empty array
   const [error, setError] = useState('');
   const [ownedPlates, setOwnedPlates] = useState([]);
+  const [inbox, setInbox] = useState([]);
 
   useEffect(() => {
     let userId = localStorage.getItem('userId');
@@ -40,10 +43,18 @@ function App() {
     setLoading(false);
   };
 
-  const loadMessages = async () => {
-    const res = await getMessages();
-    setMessages(res.data);
-  }; 
+  const loadInbox = async () => {
+    const userId = localStorage.getItem('userId');
+    if (!userId) return;
+    const res = await getUserMessages(userId);
+    setInbox(res.data);
+  };
+
+  const inboxPlates = Array.from(
+    new Set(inbox.map((m) => m.plate))
+  ).map((plate) => ({ plate }));
+  
+  const inboxMessages = inbox;
 
   const loadOwnedPlates = async () => {
     const userId = localStorage.getItem('userId');
@@ -59,7 +70,7 @@ function App() {
 
   useEffect(() => {
     loadPlates();
-   loadMessages();
+   loadInbox();
    loadOwnedPlates();
   }, []);
   
@@ -75,9 +86,7 @@ function App() {
     try {
       const senderId = localStorage.getItem('userId') || 'guest';
   
-      console.log('Registering plate:', plate);
-      await claimPlate({ plate: plate.trim(), userId: senderId });
-  
+      console.log('Registering plate:', plate);  
       console.log('Sending message:', { plate, message, senderId });
       await sendMessage({
         plate: plate.trim(),
@@ -172,12 +181,15 @@ function App() {
 
 <OwnedPlates plates={ownedPlates} />
 
-    <PlateList
-      plates={plates.filter((p) =>
-        p.plate.toLowerCase().includes(search.toLowerCase())
-      )}
-      messages={messages}
-    />
+<div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem' }}>
+  <UserProfile
+    userId={localStorage.getItem('userId')}
+    ownedPlates={ownedPlates}
+    refreshOwned={loadOwnedPlates}
+  />
+</div>
+  
+<PlateList plates={inboxPlates} messages={inboxMessages} />
   </>
 )}
     </div>

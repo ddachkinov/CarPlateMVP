@@ -55,17 +55,30 @@ router.post('/claim', async (req, res) => {
 router.post('/send', async (req, res) => {
   try {
     const { plate, message, senderId } = req.body;
-
     if (!plate || !message || !senderId) {
       return res.status(400).json({ error: 'Missing fields' });
     }
 
-    const newMessage = await Message.create({ plate, message, senderId });
+    const normalizedPlate = plate.trim().toUpperCase();
+
+    let existing = await Plate.findOne({ plate: normalizedPlate });
+    if (!existing) {
+      await Plate.create({ plate: normalizedPlate }); // Do NOT assign ownerId
+    }
+
+    const newMessage = await Message.create({
+      plate: normalizedPlate,
+      message,
+      senderId
+    });
+
     res.status(201).json(newMessage);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
+
 
 // GET /api/plates/:id
 router.get('/:id', async (req, res) => {
@@ -84,6 +97,20 @@ router.get('/owned/:userId', async (req, res) => {
     const { userId } = req.params;
     const owned = await Plate.find({ ownerId: userId }).sort({ createdAt: -1 });
     res.json(owned);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/plates/inbox/:userId
+router.get('/inbox/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const ownedPlates = await Plate.find({ ownerId: userId });
+    const plateNumbers = ownedPlates.map(p => p.plate);
+
+    const messages = await Message.find({ plate: { $in: plateNumbers } }).sort({ createdAt: -1 });
+    res.json(messages);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

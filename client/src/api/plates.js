@@ -10,6 +10,8 @@ export const sendMessage = (data) => API.post('/message', data);
 export const getMessages = () => API.get('/plates/messages');
 export const getOwnedPlates = (userId) => API.get(`/plates/owned/${userId}`);
 export const registerUser = (userId) => API.post('/user/register', { userId });
+export const getUserMessages = (userId) => API.get(`/plates/inbox/${userId}`);
+
 
 // 🛠️ Future enhancement (not in MVP):
 // When claiming a plate, we'll instead POST a verification request with:
