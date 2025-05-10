@@ -1,16 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { getPlates, sendMessage, getMessages, getOwnedPlates } from './api/plates';
+import {sendMessage, getOwnedPlates } from './api/plates';
 import PlateForm from './PlateForm';
 import PlateList from './PlateList';
 import './App.css';
-import { claimPlate } from './api/plates';
-import OwnedPlates from './OwnedPlates';
 import UserProfile from './UserProfile';
 import { getUserMessages } from './api/plates';
+// ❌ Remove this line:
 
 
 function App() {
-  const [plates, setPlates] = useState([]);
   const [plate, setPlate] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,12 +33,12 @@ function App() {
     }).catch(console.error);
   }, []);
   
-
+// Plate loading disabled in inbox-only mode
   const loadPlates = async () => {
-    setLoading(true);
-    const res = await getPlates();
-    setPlates(res.data);
-    setLoading(false);
+    // setLoading(true);
+    // const res = await getPlates();
+    // setPlates(res.data);
+    // setLoading(false);
   };
 
   const loadInbox = async () => {
@@ -96,7 +94,7 @@ function App() {
   
       console.log('✅ Message sent successfully!');
       await loadPlates();
-      await loadMessages();
+      await loadInbox(); 
   
       setPlate('');
       setMessage('');
@@ -179,7 +177,7 @@ function App() {
   </div>
 )} */}
 
-<OwnedPlates plates={ownedPlates} />
+{/* <OwnedPlates plates={ownedPlates} /> */}
 
 <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem' }}>
   <UserProfile
