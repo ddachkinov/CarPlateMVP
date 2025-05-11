@@ -5,15 +5,12 @@ import PlateList from './PlateList';
 import './App.css';
 import UserProfile from './UserProfile';
 import { getUserMessages } from './api/plates';
-// ❌ Remove this line:
-
 
 function App() {
   const [plate, setPlate] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [search, setSearch] = useState('');
   // const [messages, setMessages] = useState([]); // ✅ Safe default to empty array
   const [error, setError] = useState('');
   const [ownedPlates, setOwnedPlates] = useState([]);
@@ -134,21 +131,6 @@ function App() {
         handleSubmit={handleSubmit}
         loading={loading}
       />
-
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
-        <input
-          type="text"
-          placeholder="Search plates..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{
-            padding: '0.5rem',
-            width: '300px',
-            borderRadius: '8px',
-            border: '1px solid #ccc'
-          }}
-        />
-      </div>
 
       {loading ? (
   <p>Loading...</p>
