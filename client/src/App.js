@@ -5,6 +5,7 @@ import PlateList from './PlateList';
 import './App.css';
 import UserProfile from './UserProfile';
 import { getUserMessages } from './api/plates';
+import LoginPage from './LoginPage';
 
 function App() {
   const [plate, setPlate] = useState('');
@@ -15,6 +16,7 @@ function App() {
   const [error, setError] = useState('');
   const [ownedPlates, setOwnedPlates] = useState([]);
   const [inbox, setInbox] = useState([]);
+  const [userId, setUserId] = useState(localStorage.getItem('userId') || '');
 
   useEffect(() => {
     let userId = localStorage.getItem('userId');
@@ -107,9 +109,12 @@ function App() {
   };
   
   
-  
+  if (!userId) {
+    return <LoginPage onLogin={(id) => setUserId(id)} />;
+  }
 
   return (
+    
     <div>
       <h1>🚗 CarPlate</h1>
 

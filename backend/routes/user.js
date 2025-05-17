@@ -6,15 +6,18 @@ router.post('/register', async (req, res) => {
   const { userId } = req.body;
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
 
-  let user = await User.findOne({ userId });
-  if (!user) {
-    user = await User.create({ userId });
-    console.log('✅ New user registered:', userId);
-  } else {
-    console.log('🔁 Returning user:', userId);
-  }
+  try {
+    const user = await User.findOneAndUpdate(
+      { userId },
+      { $setOnInsert: { userId, trustScore: 100, verified: false } },
+      { new: true, upsert: true }
+    );
 
-  res.json({ success: true, user });
+    res.json({ success: true, user });
+  } catch (err) {
+    console.error('❌ Register error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 module.exports = router;
