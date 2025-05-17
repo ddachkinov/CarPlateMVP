@@ -6,8 +6,10 @@ import './App.css';
 import UserProfile from './UserProfile';
 import { getUserMessages } from './api/plates';
 import LoginPage from './LoginPage';
+import ProfilePage from './ProfilePage';
 
 function App() {
+  const [view, setView] = useState('inbox'); // 'inbox' or 'profile'
   const [plate, setPlate] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -114,8 +116,44 @@ function App() {
   }
 
   return (
-    
     <div>
+      <div style={{
+  display: 'flex',
+  justifyContent: 'center',
+  gap: '1rem',
+  margin: '2rem 0'
+}}>
+  <button
+    onClick={() => setView('inbox')}
+    style={{
+      padding: '0.5rem 1.5rem',
+      borderRadius: '6px',
+      border: view === 'inbox' ? '2px solid #007bff' : '1px solid #ccc',
+      backgroundColor: view === 'inbox' ? '#e7f0ff' : 'white',
+      color: view === 'inbox' ? '#007bff' : '#555',
+      fontWeight: view === 'inbox' ? 'bold' : 'normal',
+      cursor: 'pointer'
+    }}
+  >
+    📥 Inbox
+  </button>
+
+  <button
+    onClick={() => setView('profile')}
+    style={{
+      padding: '0.5rem 1.5rem',
+      borderRadius: '6px',
+      border: view === 'profile' ? '2px solid #007bff' : '1px solid #ccc',
+      backgroundColor: view === 'profile' ? '#e7f0ff' : 'white',
+      color: view === 'profile' ? '#007bff' : '#555',
+      fontWeight: view === 'profile' ? 'bold' : 'normal',
+      cursor: 'pointer'
+    }}
+  >
+    👤 Profile
+  </button>
+</div>
+
       <h1>🚗 CarPlate</h1>
 
       <p
@@ -174,7 +212,18 @@ function App() {
   />
 </div>
   
-<PlateList plates={inboxPlates} messages={inboxMessages} />
+{view === 'inbox' && (
+  <PlateList plates={inboxPlates} messages={inboxMessages} />
+)}
+
+{view === 'profile' && (
+  <ProfilePage
+    userId={userId}
+    ownedPlates={ownedPlates}
+    refreshOwned={loadOwnedPlates}
+  />
+)}
+
   </>
 )}
     </div>
