@@ -1,11 +1,22 @@
 import React, { useState, useEffect } from 'react';
 
+const formatRelativeTime = (dateString) => {
+  const date = new Date(dateString);
+  const diff = (Date.now() - date.getTime()) / 1000; // in seconds
+
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+
+  return date.toLocaleDateString();
+}; 
+
 const normalizePlate = (plate) => plate.trim().toUpperCase();
 
-const formatDate = (isoDate) => {
-  const date = new Date(isoDate);
-  return date.toLocaleString();
-};
+// const formatDate = (isoDate) => {
+//   const date = new Date(isoDate);
+//   return date.toLocaleString();
+// };
 
 const PlateList = ({ plates, messages }) => {
   const [reportedSenders, setReportedSenders] = useState([]);
@@ -51,28 +62,32 @@ const PlateList = ({ plates, messages }) => {
                   {currentPlate}
                 </h3>
                 <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
-                  {relatedMessages.map((m) => (
-                    <li
-                      key={m._id}
-                      style={{
-                        backgroundColor: '#f5f5f5',
-                        padding: '0.75rem',
-                        borderRadius: '8px',
-                        marginBottom: '0.5rem',
-                        fontSize: '0.95rem',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                    >
+                {relatedMessages.map((m) => {
+  const isNew = (Date.now() - new Date(m.createdAt).getTime()) < 5 * 60 * 1000;
+
+  return (
+    <li
+      key={m._id}
+      style={{
+        backgroundColor: isNew ? '#e6f7ff' : '#f5f5f5',
+        fontWeight: isNew ? 'bold' : 'normal',
+        padding: '0.75rem',
+        borderRadius: '8px',
+        marginBottom: '0.5rem',
+        fontSize: '0.95rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}
+    >
                       <div>
                         <div style={{ fontWeight: 'bold' }}>
                           {m.senderId === userId ? 'You' : `From ${m.senderId}`}
                         </div>
                         <div>{m.message}</div>
                         <div style={{ fontSize: '0.75rem', color: '#888' }}>
-                          {formatDate(m.createdAt)}
-                        </div>
+  {formatRelativeTime(m.createdAt)}
+</div>
                       </div>
 
                       {m.senderId !== userId && (
@@ -109,9 +124,10 @@ const PlateList = ({ plates, messages }) => {
                           </button>
                         )
                       )}
-                    </li>
-                  ))}
-                </ul>
+                    </li> 
+                    );
+                })}
+                </ul> 
               </li>
             );
           })}
