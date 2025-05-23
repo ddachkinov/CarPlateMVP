@@ -9,7 +9,7 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
   const handleClaim = async () => {
     if (!newPlate.trim()) return;
     try {
-      await claimPlate({ plate: newPlate.trim().toUpperCase(), userId });
+      await claimPlate({ plate: newPlate.trim().toUpperCase(), ownerId: userId });
       setSuccess('✅ Plate claimed (MVP: verified by default)');
       setError('');
       setNewPlate('');
@@ -24,6 +24,17 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
     }
   };
 
+  const handleUnclaim = async (plateId) => {
+    try {
+      await fetch(`${process.env.REACT_APP_API_URL}/plates/${plateId}?ownerId=${userId}`, {
+        method: 'DELETE'
+      });
+      refreshOwned();
+    } catch (err) {
+      alert('❌ Failed to unclaim plate');
+    }
+  };  
+
   return (
     <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
       <h2>🧑 Your Profile</h2>
@@ -35,10 +46,13 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
         <>
           <h3 style={{ marginTop: '1.5rem' }}>🚘 Your Claimed Plates</h3>
           <ul style={{ paddingLeft: '1rem' }}>
-            {ownedPlates.map((p) => (
-              <li key={p._id}>{p.plate}</li>
-            ))}
-          </ul>
+  {ownedPlates.map((p) => (
+    <li key={p._id} style={{ display: 'flex', justifyContent: 'space-between' }}>
+      {p.plate}
+      <button onClick={() => handleUnclaim(p._id)} style={{ marginLeft: '1rem' }}>🗑 Remove</button>
+    </li>
+  ))}
+</ul>
           <p style={{ fontSize: '0.85rem', color: '#888' }}>
             🛠️ For MVP, we assume verification is already completed.
           </p>

@@ -26,22 +26,25 @@ router.get('/messages', async (req, res) => {
 // POST /api/plates/claim with ownership
 router.post('/claim', async (req, res) => {
   try {
-    const { plate, userId } = req.body;
-    if (!plate || !userId) return res.status(400).json({ error: 'Missing plate or userId' });
+    const { plate, ownerId } = req.body;
+
+    if (!plate || !ownerId) {
+      return res.status(400).json({ error: 'Missing plate or ownerId' });
+    }
 
     const normalizedPlate = plate.trim().toUpperCase();
     let existing = await Plate.findOne({ plate: { $regex: `^${normalizedPlate}$`, $options: 'i' } });
 
     if (existing) {
-      if (existing.ownerId && existing.ownerId !== userId) {
+      if (existing.ownerId && existing.ownerId !== ownerId) {
         return res.status(409).json({ error: 'Plate already owned by another user' });
       }
       if (!existing.ownerId) {
-        existing.ownerId = userId;
+        existing.ownerId = ownerId;
         await existing.save();
       }
     } else {
-      await Plate.create({ plate: normalizedPlate, ownerId: userId });
+      await Plate.create({ plate: normalizedPlate, ownerId });
     }
 
     res.json({ success: true });
@@ -78,8 +81,6 @@ router.post('/send', async (req, res) => {
   }
 });
 
-
-
 // GET /api/plates/:id
 router.get('/:id', async (req, res) => {
   try {
@@ -111,6 +112,24 @@ router.get('/inbox/:userId', async (req, res) => {
 
     const messages = await Message.find({ plate: { $in: plateNumbers } }).sort({ createdAt: -1 });
     res.json(messages);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/plates/:plateId?userId=...
+router.delete('/:plateId', async (req, res) => {
+  const { ownerId } = req.query;
+  const { plateId } = req.params;
+
+  try {
+    const plate = await Plate.findById(plateId);
+    if (!plate) return res.status(404).json({ error: 'Plate not found' });
+    if (plate.ownerId !== ownerId) return res.status(403).json({ error: 'Not your plate' });
+
+    await Plate.findByIdAndDelete(plateId);
+
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

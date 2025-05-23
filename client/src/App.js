@@ -3,7 +3,6 @@ import {sendMessage, getOwnedPlates } from './api/plates';
 import PlateForm from './PlateForm';
 import PlateList from './PlateList';
 import './App.css';
-import UserProfile from './UserProfile';
 import { getUserMessages } from './api/plates';
 import LoginPage from './LoginPage';
 import ProfilePage from './ProfilePage';
@@ -190,27 +189,6 @@ function App() {
         {error}
       </p>
     )}
-{/* 
-    {ownedPlates.length > 0 && (
-  <div style={{ marginBottom: '2rem' }}>
-    <h3>🚘 Your Claimed Plates</h3>
-    <ul style={{ paddingLeft: '1rem' }}>
-      {ownedPlates.map((p) => (
-        <li key={p._id} style={{ fontSize: '0.95rem' }}>{p.plate}</li>
-      ))}
-    </ul>
-  </div>
-)} */}
-
-{/* <OwnedPlates plates={ownedPlates} /> */}
-
-<div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem' }}>
-  <UserProfile
-    userId={localStorage.getItem('userId')}
-    ownedPlates={ownedPlates}
-    refreshOwned={loadOwnedPlates}
-  />
-</div>
   
 {view === 'inbox' && (
   <PlateList plates={inboxPlates} messages={inboxMessages} />
