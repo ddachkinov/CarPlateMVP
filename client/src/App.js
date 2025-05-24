@@ -18,6 +18,9 @@ function App() {
   const [ownedPlates, setOwnedPlates] = useState([]);
   const [inbox, setInbox] = useState([]);
   const [userId, setUserId] = useState(localStorage.getItem('userId') || '');
+  const [lastGuestMessageTime, setLastGuestMessageTime] = useState(null);
+
+  const isGuest = !ownedPlates.length;
 
   useEffect(() => {
     let userId = localStorage.getItem('userId');
@@ -107,6 +110,39 @@ function App() {
     }
   
     setLoading(false);
+
+    const predefinedMessages = [
+      'Your headlights are on',
+      'Your car is blocking another car',
+      'Your window is open',
+      'Your alarm is ringing',
+      'Your tire looks flat'
+    ];
+    
+    const isPredefined = predefinedMessages.includes(message.trim());
+    
+    if (isGuest) {
+      const now = Date.now();
+
+      if (isGuest && !predefinedMessages.some(msg => msg === message.trim())) {
+        alert('🛑 Guests can only send predefined messages.');
+        return;
+      }
+      
+      if (!isPredefined) {
+        alert('🛑 Guests can only send predefined messages.');
+        return;
+      }
+    
+      if (lastGuestMessageTime && now - lastGuestMessageTime < 60 * 1000) {
+        alert('⏱ Please wait a moment before sending another message.');
+        return;
+      }
+    
+      setLastGuestMessageTime(now);
+    }
+    
+
   };
   
   
@@ -172,6 +208,7 @@ function App() {
         setMessage={setMessage}
         handleSubmit={handleSubmit}
         loading={loading}
+        isGuest={!ownedPlates.length}
       />
 
       {loading ? (
