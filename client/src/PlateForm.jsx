@@ -145,44 +145,82 @@ const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading
         </p>
       )}
 
-      {/* Message field */}
-      {isVerified ? (
-        <textarea
-          placeholder="Write your message..."
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          style={{
-            padding: '0.5rem',
-            width: '90%',
-            maxWidth: '600px',
-            borderRadius: '8px',
-            border: '1px solid #ccc',
-            height: '100px',
-            marginBottom: '1rem'
-          }}
-        />
-      ) : (
-        <select
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          style={{
-            padding: '0.5rem',
-            width: '90%',
-            maxWidth: '600px',
-            borderRadius: '8px',
-            border: '1px solid #ccc',
-            height: '50px',
-            marginBottom: '1rem'
-          }}
-        >
-          <option value="">Select a message...</option>
-          {predefinedMessages.map((msg, idx) => (
-            <option key={idx} value={msg}>
-              {msg}
-            </option>
-          ))}
-        </select>
-      )}
+{isGuest ? (
+  <>
+    <select
+      value={message}
+      onChange={(e) => setMessage(e.target.value)}
+      style={{
+        padding: '0.5rem',
+        width: '90%',
+        maxWidth: '600px',
+        borderRadius: '8px',
+        border: '1px solid #ccc',
+        marginBottom: '0.5rem'
+      }}
+    >
+      <option value="">Select a predefined message...</option>
+      {predefinedMessages.map((msg, idx) => (
+        <option key={idx} value={msg}>{msg}</option>
+      ))}
+    </select>
+
+    <textarea
+      readOnly
+      placeholder="Only registered users can send custom messages"
+      value=""
+      onFocus={() => alert('🛑 Guests can only send predefined messages.')}
+      style={{
+        padding: '0.5rem',
+        width: '90%',
+        maxWidth: '600px',
+        borderRadius: '8px',
+        border: '1px solid #ccc',
+        height: '100px',
+        marginBottom: '1rem',
+        backgroundColor: '#f5f5f5',
+        color: '#777',
+        resize: 'none',
+        cursor: 'not-allowed'
+      }}
+    />
+  </>
+) : (
+  <>
+    <select
+      value=""
+      onChange={(e) => setMessage(e.target.value)}
+      style={{
+        padding: '0.5rem',
+        width: '90%',
+        maxWidth: '600px',
+        borderRadius: '8px',
+        border: '1px solid #ccc',
+        marginBottom: '0.5rem'
+      }}
+    >
+      <option value="">💬 Quick message...</option>
+      {predefinedMessages.map((msg, idx) => (
+        <option key={idx} value={msg}>{msg}</option>
+      ))}
+    </select>
+
+    <textarea
+      placeholder="Write your message..."
+      value={message}
+      onChange={(e) => setMessage(e.target.value)}
+      style={{
+        padding: '0.5rem',
+        width: '90%',
+        maxWidth: '600px',
+        borderRadius: '8px',
+        border: '1px solid #ccc',
+        height: '100px',
+        marginBottom: '1rem'
+      }}
+    />
+  </>
+)}
 
       <button
         type="submit"
