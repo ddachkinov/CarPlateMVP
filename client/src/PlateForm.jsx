@@ -52,7 +52,13 @@ const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-  
+
+    const resized = file.size > 3 * 1024 * 1024 ? await resizeImage(file) : file;
+
+    const formData = new FormData();
+    formData.append('upload', resized);
+    formData.append('config', JSON.stringify({ region: 'none', detect_region: false }));
+
     setLoadingOCR(true);
   
     try {
