@@ -3,6 +3,7 @@ import axios from 'axios';
 
 const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading, isGuest }) => {
   const [loadingOCR, setLoadingOCR] = useState(false);
+  const [showWarning, setShowWarning] = useState(false);
 
   const predefinedMessages = [
     "Your headlights are on",
@@ -117,7 +118,7 @@ const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading
       readOnly
       placeholder="Only registered users can send custom messages"
       value=""
-      onFocus={() => alert('🛑 Guests can only send predefined messages.')}
+      onFocus={() => setShowWarning(true)}
       style={{
         padding: '0.5rem',
         width: '90%',
@@ -132,6 +133,11 @@ const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading
         cursor: 'not-allowed'
       }}
     />
+
+{showWarning && (
+  <p className="text-red-500 text-sm">🛑 Guests can only send predefined messages.</p>
+)}
+
   </>
 ) : (
   <>

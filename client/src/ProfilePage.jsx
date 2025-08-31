@@ -59,7 +59,9 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
         </>
       ) : (
         <p style={{ marginTop: '1rem', color: '#555' }}>
-  You haven’t registered any plates yet. <strong>(guest mode)</strong>
+  You haven’t registered any plates yet. <strong>(guest mode).</strong> <p style={{ marginTop: '1rem', color: '#555' }}>
+  Claim your carPlate to become a Premium user.
+</p> 
 </p>
       )}
 
