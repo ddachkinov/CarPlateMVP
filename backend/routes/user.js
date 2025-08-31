@@ -8,30 +8,25 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ error: 'Missing or invalid userId' });
   }
   userId = userId.trim();
-  if (!userId) {
-    return res.status(400).json({ error: 'Missing userId' });
-  }
+  if (!userId) return res.status(400).json({ error: 'Missing userId' });
 
   try {
-    const result = await User.findOneAndUpdate(
+    // Upsert and let schema defaults apply on insert
+    const upd = await User.updateOne(
       { userId },
-      // Only set on first insert; rely on schema defaults for all other fields
       { $setOnInsert: { userId } },
-      {
-        new: true,
-        upsert: true,
-        setDefaultsOnInsert: true,   // <-- ensure schema defaults (premium, nickname, showPlate, trustScore, verified) are applied
-        rawResult: true              // <-- so we can see if it was created vs found
-      }
+      { upsert: true, setDefaultsOnInsert: true }
     );
 
-    const created = !result.lastErrorObject.updatedExisting;
-    const user = result.value;
+    const created = upd.upsertedCount > 0;
+
+    // Fetch the document to return it
+    const user = await User.findOne({ userId });
 
     return res.status(created ? 201 : 200).json({
       success: true,
       created,
-      user
+      user,
     });
   } catch (err) {
     console.error('❌ Register error:', err);
