@@ -44,7 +44,7 @@ const PlateList = ({ plates, messages }) => {
   };
 
   return (
-    <div style={{ marginTop: '2rem' }}>
+    <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
       <h2>📥 Inbox</h2>
       {plates.length === 0 ? (
         <p style={{ color: '#777' }}>No messages received yet.</p>
