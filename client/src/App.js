@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {sendMessage, getOwnedPlates } from './api/plates';
+import { sendMessage, getOwnedPlates } from './api/plates';
 import PlateForm from './PlateForm';
 import PlateList from './PlateList';
 import './App.css';
@@ -13,7 +13,6 @@ function App() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  // const [messages, setMessages] = useState([]); // ✅ Safe default to empty array
   const [error, setError] = useState('');
   const [ownedPlates, setOwnedPlates] = useState([]);
   const [inbox, setInbox] = useState([]);
@@ -22,21 +21,34 @@ function App() {
 
   const isGuest = !ownedPlates.length;
 
-  useEffect(() => {
-    let userId = localStorage.getItem('userId');
-    if (!userId) {
-      userId = 'user-' + Math.random().toString(36).substring(2, 10);
-      localStorage.setItem('userId', userId);
-    }
-  
-    fetch(`${process.env.REACT_APP_API_URL}/user/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId })
-    }).catch(console.error);
-  }, []);
-  
-// Plate loading disabled in inbox-only mode
+useEffect(() => {
+  // ensure userId exists and is registered
+  let uid = localStorage.getItem('userId');
+  if (!uid) {
+    uid = 'user-' + Math.random().toString(36).substring(2, 10);
+    localStorage.setItem('userId', uid);
+  }
+  setUserId(uid);
+
+  // register user on backend (idempotent)
+  fetch(`${process.env.REACT_APP_API_URL}/user/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: uid })
+  }).catch(console.error);
+
+  // initial load
+  loadInbox();
+  loadOwnedPlates();
+}, []);
+
+// 🔧 NEW: when ownedPlates changes, re-fetch inbox
+useEffect(() => {
+  if (!userId) return;
+  loadInbox();
+}, [ownedPlates, userId]);
+
+  // Plate loading disabled in inbox-only mode
   const loadPlates = async () => {
     // setLoading(true);
     // const res = await getPlates();
@@ -51,10 +63,7 @@ function App() {
     setInbox(res.data);
   };
 
-  const inboxPlates = Array.from(
-    new Set(inbox.map((m) => m.plate))
-  ).map((plate) => ({ plate }));
-  
+  const inboxPlates = Array.from(new Set(inbox.map((m) => m.plate))).map((plate) => ({ plate }));
   const inboxMessages = inbox;
 
   const loadOwnedPlates = async () => {
@@ -71,10 +80,16 @@ function App() {
 
   useEffect(() => {
     loadPlates();
-   loadInbox();
-   loadOwnedPlates();
+    loadInbox();
+    loadOwnedPlates();
   }, []);
-  
+
+  // 🔧 NEW: call after claim/unclaim (from ProfilePage) to refresh data and go to Inbox
+  const handlePlateChanged = async () => {
+    await loadOwnedPlates();
+    await loadInbox();
+    setView('inbox'); // optional: jump back to inbox so the new messages are visible
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -82,23 +97,23 @@ function App() {
       alert('Plate and Message must be at least 2 characters!');
       return;
     }
-  
+
     setLoading(true);
     try {
       const senderId = localStorage.getItem('userId') || 'guest';
-  
-      console.log('Registering plate:', plate);  
+
+      console.log('Registering plate:', plate);
       console.log('Sending message:', { plate, message, senderId });
       await sendMessage({
         plate: plate.trim(),
         message: message.trim(),
         senderId
       });
-  
+
       console.log('✅ Message sent successfully!');
       await loadPlates();
-      await loadInbox(); 
-  
+      await loadInbox();
+
       setPlate('');
       setMessage('');
       setSuccess(true);
@@ -108,7 +123,7 @@ function App() {
       setError('❌ Failed to send message. Please try again.');
       setTimeout(() => setError(''), 3000);
     }
-  
+
     setLoading(false);
 
     const predefinedMessages = [
@@ -118,9 +133,9 @@ function App() {
       'Your alarm is ringing',
       'Your tire looks flat'
     ];
-    
+
     const isPredefined = predefinedMessages.includes(message.trim());
-    
+
     if (isGuest) {
       const now = Date.now();
 
@@ -128,66 +143,65 @@ function App() {
         alert('🛑 Guests can only send predefined messages.');
         return;
       }
-      
+
       if (!isPredefined) {
         alert('🛑 Guests can only send predefined messages.');
         return;
       }
-    
+
       if (lastGuestMessageTime && now - lastGuestMessageTime < 60 * 1000) {
         alert('⏱ Please wait a moment before sending another message.');
         return;
       }
-    
+
       setLastGuestMessageTime(now);
     }
-    
-
   };
-  
-  
+
   if (!userId) {
     return <LoginPage onLogin={(id) => setUserId(id)} />;
   }
 
   return (
     <div>
-      <div style={{
-  display: 'flex',
-  justifyContent: 'center',
-  gap: '1rem',
-  margin: '2rem 0'
-}}>
-  <button
-    onClick={() => setView('inbox')}
-    style={{
-      padding: '0.5rem 1.5rem',
-      borderRadius: '6px',
-      border: view === 'inbox' ? '2px solid #007bff' : '1px solid #ccc',
-      backgroundColor: view === 'inbox' ? '#e7f0ff' : 'white',
-      color: view === 'inbox' ? '#007bff' : '#555',
-      fontWeight: view === 'inbox' ? 'bold' : 'normal',
-      cursor: 'pointer'
-    }}
-  >
-    📥 Inbox
-  </button>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '1rem',
+          margin: '2rem 0'
+        }}
+      >
+        <button
+          onClick={() => setView('inbox')}
+          style={{
+            padding: '0.5rem 1.5rem',
+            borderRadius: '6px',
+            border: view === 'inbox' ? '2px solid #007bff' : '1px solid #ccc',
+            backgroundColor: view === 'inbox' ? '#e7f0ff' : 'white',
+            color: view === 'inbox' ? '#007bff' : '#555',
+            fontWeight: view === 'inbox' ? 'bold' : 'normal',
+            cursor: 'pointer'
+          }}
+        >
+          📥 Inbox
+        </button>
 
-  <button
-    onClick={() => setView('profile')}
-    style={{
-      padding: '0.5rem 1.5rem',
-      borderRadius: '6px',
-      border: view === 'profile' ? '2px solid #007bff' : '1px solid #ccc',
-      backgroundColor: view === 'profile' ? '#e7f0ff' : 'white',
-      color: view === 'profile' ? '#007bff' : '#555',
-      fontWeight: view === 'profile' ? 'bold' : 'normal',
-      cursor: 'pointer'
-    }}
-  >
-    👤 Profile
-  </button>
-</div>
+        <button
+          onClick={() => setView('profile')}
+          style={{
+            padding: '0.5rem 1.5rem',
+            borderRadius: '6px',
+            border: view === 'profile' ? '2px solid #007bff' : '1px solid #ccc',
+            backgroundColor: view === 'profile' ? '#e7f0ff' : 'white',
+            color: view === 'profile' ? '#007bff' : '#555',
+            fontWeight: view === 'profile' ? 'bold' : 'normal',
+            cursor: 'pointer'
+          }}
+        >
+          👤 Profile
+        </button>
+      </div>
 
       <h1>🚗 CarPlate</h1>
 
@@ -195,52 +209,53 @@ function App() {
         style={{
           color: 'green',
           opacity: success ? 1 : 0,
-          transition: 'opacity 0.5s ease-in-out',
+          transition: 'opacity 0.5s ease-in-out'
         }}
       >
         ✅ Message sent successfully!
       </p>
 
-      <PlateForm
-        plate={plate}
-        setPlate={setPlate}
-        message={message}
-        setMessage={setMessage}
-        handleSubmit={handleSubmit}
-        loading={loading}
-        isGuest={!ownedPlates.length}
-      />
+      {/* 🧩 FORM ONLY IN INBOX */}
+      {view === 'inbox' && (
+        <PlateForm
+          plate={plate}
+          setPlate={setPlate}
+          message={message}
+          setMessage={setMessage}
+          handleSubmit={handleSubmit}
+          loading={loading}
+          isGuest={!ownedPlates.length}
+        />
+      )}
 
       {loading ? (
-  <p>Loading...</p>
-) : (
-  <>
-    {error && (
-      <p
-        style={{
-          color: 'red',
-          opacity: error ? 1 : 0,
-          transition: 'opacity 0.5s ease-in-out',
-        }}
-      >
-        {error}
-      </p>
-    )}
-  
-{view === 'inbox' && (
-  <PlateList plates={inboxPlates} messages={inboxMessages} />
-)}
+        <p>Loading...</p>
+      ) : (
+        <>
+          {error && (
+            <p
+              style={{
+                color: 'red',
+                opacity: error ? 1 : 0,
+                transition: 'opacity 0.5s ease-in-out'
+              }}
+            >
+              {error}
+            </p>
+          )}
 
-{view === 'profile' && (
-  <ProfilePage
-    userId={userId}
-    ownedPlates={ownedPlates}
-    refreshOwned={loadOwnedPlates}
-  />
-)}
+          {view === 'inbox' && <PlateList plates={inboxPlates} messages={inboxMessages} />}
 
-  </>
-)}
+          {view === 'profile' && (
+            <ProfilePage
+              userId={userId}
+              ownedPlates={ownedPlates}
+              refreshOwned={loadOwnedPlates}
+              onPlateChanged={handlePlateChanged}
+            />
+          )}
+        </>
+      )}
     </div>
   );
 }
