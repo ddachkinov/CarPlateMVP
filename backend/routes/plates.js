@@ -47,7 +47,17 @@ router.post('/claim', async (req, res) => {
       await Plate.create({ plate: normalizedPlate, ownerId });
     }
 
-    res.json({ success: true });
+    // Count unread messages that were waiting for this plate
+    const unreadCount = await Message.countDocuments({
+      plate: normalizedPlate,
+      isRead: false
+    });
+
+    res.json({
+      success: true,
+      unreadCount,
+      message: unreadCount > 0 ? `You have ${unreadCount} message${unreadCount > 1 ? 's' : ''} waiting!` : null
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -111,6 +121,16 @@ router.get('/inbox/:userId', async (req, res) => {
     const plateNumbers = ownedPlates.map(p => p.plate);
 
     const messages = await Message.find({ plate: { $in: plateNumbers } }).sort({ createdAt: -1 });
+
+    // Automatically mark messages as read when inbox is viewed
+    const unreadMessageIds = messages.filter(m => !m.isRead).map(m => m._id);
+    if (unreadMessageIds.length > 0) {
+      await Message.updateMany(
+        { _id: { $in: unreadMessageIds } },
+        { $set: { isRead: true } }
+      );
+    }
+
     res.json(messages);
   } catch (err) {
     res.status(500).json({ error: err.message });

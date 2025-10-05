@@ -31,8 +31,13 @@ app.get('/', (req, res) => {
   res.send('API is working');
 });
 
-// Start server
-const port = process.env.PORT || 5001;
-app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
-});
+// Export app for testing
+module.exports = app;
+
+// Start server only if not in test environment
+if (process.env.NODE_ENV !== 'test') {
+  const port = process.env.PORT || 5001;
+  app.listen(port, () => {
+    console.log(`🚀 Server running on port ${port}`);
+  });
+}
