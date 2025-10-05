@@ -64,20 +64,22 @@ const PlateList = ({ plates, messages }) => {
                 <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
                 {relatedMessages.map((m) => {
   const isNew = (Date.now() - new Date(m.createdAt).getTime()) < 5 * 60 * 1000;
+  const wasUnread = m.isRead === false;
 
   return (
     <li
       key={m._id}
       style={{
-        backgroundColor: isNew ? '#e6f7ff' : '#f5f5f5',
-        fontWeight: isNew ? 'bold' : 'normal',
+        backgroundColor: isNew || wasUnread ? '#e6f7ff' : '#f5f5f5',
+        fontWeight: isNew || wasUnread ? 'bold' : 'normal',
         padding: '0.75rem',
         borderRadius: '8px',
         marginBottom: '0.5rem',
         fontSize: '0.95rem',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+        borderLeft: wasUnread ? '4px solid #1890ff' : 'none'
       }}
     >
                       <div>

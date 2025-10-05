@@ -9,8 +9,15 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
   const handleClaim = async () => {
     if (!newPlate.trim()) return;
     try {
-      await claimPlate({ plate: newPlate.trim().toUpperCase(), ownerId: userId });
-      setSuccess('✅ Plate claimed (MVP: verified by default)');
+      const response = await claimPlate({ plate: newPlate.trim().toUpperCase(), ownerId: userId });
+      const { unreadCount, message } = response.data;
+
+      if (unreadCount > 0) {
+        setSuccess(`✅ Plate claimed! 🎉 ${message}`);
+      } else {
+        setSuccess('✅ Plate claimed (MVP: verified by default)');
+      }
+
       setError('');
       setNewPlate('');
       refreshOwned();
