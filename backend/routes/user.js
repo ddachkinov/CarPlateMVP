@@ -1,20 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const { generalApiLimiter } = require('../middleware/rateLimiter');
+const { validateUserRegistration } = require('../middleware/validation');
 
-router.post('/register', async (req, res) => {
-  let { userId } = req.body;
-  if (!userId || typeof userId !== 'string') {
-    return res.status(400).json({ error: 'Missing or invalid userId' });
-  }
-  userId = userId.trim();
-  if (!userId) return res.status(400).json({ error: 'Missing userId' });
-
+router.post('/register', generalApiLimiter, validateUserRegistration, async (req, res) => {
   try {
+    // Use sanitized values from validation middleware
+    const { userId, nickname } = req.sanitized;
+
     // Upsert and let schema defaults apply on insert
+    const updateData = { $setOnInsert: { userId } };
+    if (nickname) {
+      updateData.$set = { nickname };
+    }
+
     const upd = await User.updateOne(
       { userId },
-      { $setOnInsert: { userId } },
+      updateData,
       { upsert: true, setDefaultsOnInsert: true }
     );
 

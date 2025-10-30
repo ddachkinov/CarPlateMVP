@@ -24,6 +24,15 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
     } catch (err) {
       if (err.response?.status === 409) {
         setError('❌ This plate is already claimed by another user');
+      } else if (err.response?.status === 429) {
+        // Rate limit error
+        const retryAfter = err.response.headers['retry-after'] || 3600;
+        const hours = Math.ceil(retryAfter / 3600);
+        setError(`⏱ Too many plate claims. Please wait ${hours} hour${hours > 1 ? 's' : ''} before claiming more plates.`);
+      } else if (err.response?.status === 400) {
+        setError(err.response.data.error || '❌ Invalid plate number');
+      } else if (err.response?.status === 403) {
+        setError(err.response.data.error || '❌ You do not have permission to claim plates');
       } else {
         setError('❌ Failed to claim plate');
       }
