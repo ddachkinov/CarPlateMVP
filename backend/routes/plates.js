@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const Plate = require('../models/Plate');
 const Message = require('../models/Message');
+const { plateClaimLimiter, generalApiLimiter } = require('../middleware/rateLimiter');
+const { validatePlateClaimRequest } = require('../middleware/validation');
 
 // GET /api/plates
 router.get('/', async (req, res) => {
@@ -24,16 +26,12 @@ router.get('/messages', async (req, res) => {
 });
   
 // POST /api/plates/claim with ownership
-router.post('/claim', async (req, res) => {
+router.post('/claim', plateClaimLimiter, validatePlateClaimRequest, async (req, res) => {
   try {
-    const { plate, ownerId } = req.body;
+    // Use sanitized values from validation middleware
+    const { plate, ownerId } = req.sanitized;
 
-    if (!plate || !ownerId) {
-      return res.status(400).json({ error: 'Missing plate or ownerId' });
-    }
-
-    const normalizedPlate = plate.trim().toUpperCase();
-    let existing = await Plate.findOne({ plate: { $regex: `^${normalizedPlate}$`, $options: 'i' } });
+    let existing = await Plate.findOne({ plate: { $regex: `^${plate}$`, $options: 'i' } });
 
     if (existing) {
       if (existing.ownerId && existing.ownerId !== ownerId) {
@@ -44,12 +42,12 @@ router.post('/claim', async (req, res) => {
         await existing.save();
       }
     } else {
-      await Plate.create({ plate: normalizedPlate, ownerId });
+      await Plate.create({ plate, ownerId });
     }
 
     // Count unread messages that were waiting for this plate
     const unreadCount = await Message.countDocuments({
-      plate: normalizedPlate,
+      plate,
       isRead: false
     });
 

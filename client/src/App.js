@@ -17,7 +17,6 @@ function App() {
   const [ownedPlates, setOwnedPlates] = useState([]);
   const [inbox, setInbox] = useState([]);
   const [userId, setUserId] = useState(localStorage.getItem('userId') || '');
-  const [lastGuestMessageTime, setLastGuestMessageTime] = useState(null);
 
   const isGuest = !ownedPlates.length;
 
@@ -120,42 +119,27 @@ useEffect(() => {
       setTimeout(() => setSuccess(false), 2000);
     } catch (err) {
       console.error('❌ Error during submit:', err.response?.data || err.message);
-      setError('❌ Failed to send message. Please try again.');
-      setTimeout(() => setError(''), 3000);
+
+      // Handle different error responses
+      if (err.response?.status === 429) {
+        // Rate limit error
+        const retryAfter = err.response.headers['retry-after'] || 60;
+        const minutes = Math.ceil(retryAfter / 60);
+        setError(`⏱ Too many requests. Please wait ${minutes} minute${minutes > 1 ? 's' : ''} before sending another message.`);
+      } else if (err.response?.status === 400) {
+        // Validation error
+        setError(err.response.data.error || '❌ Invalid input. Please check your message.');
+      } else if (err.response?.status === 403) {
+        // Forbidden (e.g., guest trying to claim plate)
+        setError(err.response.data.error || '❌ You do not have permission to perform this action.');
+      } else {
+        setError('❌ Failed to send message. Please try again.');
+      }
+
+      setTimeout(() => setError(''), 5000);
     }
 
     setLoading(false);
-
-    const predefinedMessages = [
-      'Your headlights are on',
-      'Your car is blocking another car',
-      'Your window is open',
-      'Your alarm is ringing',
-      'Your tire looks flat'
-    ];
-
-    const isPredefined = predefinedMessages.includes(message.trim());
-
-    if (isGuest) {
-      const now = Date.now();
-
-      if (isGuest && !predefinedMessages.some(msg => msg === message.trim())) {
-        alert('🛑 Guests can only send predefined messages.');
-        return;
-      }
-
-      if (!isPredefined) {
-        alert('🛑 Guests can only send predefined messages.');
-        return;
-      }
-
-      if (lastGuestMessageTime && now - lastGuestMessageTime < 60 * 1000) {
-        alert('⏱ Please wait a moment before sending another message.');
-        return;
-      }
-
-      setLastGuestMessageTime(now);
-    }
   };
 
   if (!userId) {
