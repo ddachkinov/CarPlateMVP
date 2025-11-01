@@ -17,7 +17,7 @@ const initializeRedis = async () => {
             // Stop retrying after 3 attempts
             if (retries > 3) {
               console.log('⚠️  Redis connection failed after 3 retries, using in-memory rate limiting');
-              return null; // Stop retrying
+              return false; // Stop retrying (return false, not null)
             }
             return Math.min(retries * 50, 500);
           }
