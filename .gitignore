@@ -55,3 +55,4 @@ pids
 
 # OS generated files
 Thumbs.db
+backend/test-email.sh
