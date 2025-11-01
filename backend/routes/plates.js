@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const Plate = require('../models/Plate');
 const Message = require('../models/Message');
+const User = require('../models/User');
 const { plateClaimLimiter, generalApiLimiter } = require('../middleware/rateLimiter');
 const { validatePlateClaimRequest } = require('../middleware/validation');
 const { asyncHandler, NotFoundError, ConflictError, AuthorizationError, ValidationError } = require('../middleware/errorHandler');
+const { sendWelcomeEmail } = require('../services/emailService');
 
 // GET /api/plates
 router.get('/', asyncHandler(async (req, res) => {
@@ -21,7 +23,7 @@ router.get('/messages', asyncHandler(async (req, res) => {
 // POST /api/plates/claim with ownership
 router.post('/claim', plateClaimLimiter, validatePlateClaimRequest, asyncHandler(async (req, res) => {
   // Use sanitized values from validation middleware
-  const { plate, ownerId } = req.sanitized;
+  const { plate, ownerId, email } = req.sanitized;
 
   let existing = await Plate.findOne({ plate: { $regex: `^${plate}$`, $options: 'i' } });
 
@@ -36,6 +38,30 @@ router.post('/claim', plateClaimLimiter, validatePlateClaimRequest, asyncHandler
   } else {
     await Plate.create({ plate, ownerId });
   }
+
+  // Update or create user with email for notifications
+  await User.findOneAndUpdate(
+    { userId: ownerId },
+    {
+      $set: {
+        email,
+        emailVerified: false,
+        notificationPreference: 'email'
+      },
+      $setOnInsert: {
+        userId: ownerId,
+        trustScore: 100,
+        verified: false,
+        premium: false
+      }
+    },
+    { upsert: true, new: true }
+  );
+
+  // Send welcome email (async, don't wait for it)
+  sendWelcomeEmail({ email, plate }).catch(err =>
+    console.error('Failed to send welcome email:', err)
+  );
 
   // Count unread messages that were waiting for this plate
   const unreadCount = await Message.countDocuments({
