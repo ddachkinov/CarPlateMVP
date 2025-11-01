@@ -13,12 +13,22 @@ const initializeRedis = async () => {
       redisClient = createClient({
         url: process.env.REDIS_URL,
         socket: {
-          reconnectStrategy: (retries) => Math.min(retries * 50, 500)
+          reconnectStrategy: (retries) => {
+            // Stop retrying after 3 attempts
+            if (retries > 3) {
+              console.log('⚠️  Redis connection failed after 3 retries, using in-memory rate limiting');
+              return null; // Stop retrying
+            }
+            return Math.min(retries * 50, 500);
+          }
         }
       });
 
       redisClient.on('error', (err) => {
-        console.error('Redis Client Error:', err);
+        console.error('⚠️  Redis Client Error (will use memory store):', err.message);
+        // Don't crash the app on Redis errors
+        redisClient = null;
+        redisStore = null;
       });
 
       await redisClient.connect();
@@ -33,7 +43,7 @@ const initializeRedis = async () => {
       console.log('ℹ️  Using in-memory rate limiting (no REDIS_URL configured)');
     }
   } catch (err) {
-    console.error('❌ Redis connection failed, falling back to memory store:', err);
+    console.error('❌ Redis connection failed, falling back to memory store:', err.message);
     redisClient = null;
     redisStore = null;
   }
