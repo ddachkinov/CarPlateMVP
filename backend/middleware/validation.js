@@ -121,6 +121,32 @@ const validateUserId = (userId) => {
 };
 
 /**
+ * Validate email address
+ * - Must be a valid email format
+ * - Sanitized to lowercase
+ */
+const validateEmail = (email) => {
+  if (!email || typeof email !== 'string') {
+    return { valid: false, error: 'Email is required' };
+  }
+
+  const trimmed = email.trim().toLowerCase();
+
+  // Basic email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(trimmed)) {
+    return { valid: false, error: 'Invalid email format' };
+  }
+
+  // Prevent excessively long emails
+  if (trimmed.length > 254) {
+    return { valid: false, error: 'Email address is too long' };
+  }
+
+  return { valid: true, sanitized: trimmed };
+};
+
+/**
  * Middleware: Validate message sending request
  */
 const validateMessageRequest = async (req, res, next) => {
@@ -169,7 +195,7 @@ const validateMessageRequest = async (req, res, next) => {
  * Note: All users can claim plates - this is how they become registered users!
  */
 const validatePlateClaimRequest = (req, res, next) => {
-  const { plate, ownerId } = req.body;
+  const { plate, ownerId, email } = req.body;
 
   // Validate plate
   const plateValidation = validatePlate(plate);
@@ -183,10 +209,17 @@ const validatePlateClaimRequest = (req, res, next) => {
     return res.status(400).json({ error: userValidation.error });
   }
 
+  // Validate email
+  const emailValidation = validateEmail(email);
+  if (!emailValidation.valid) {
+    return res.status(400).json({ error: emailValidation.error });
+  }
+
   // Attach sanitized values to request
   req.sanitized = {
     plate: plateValidation.sanitized,
-    ownerId: userValidation.sanitized
+    ownerId: userValidation.sanitized,
+    email: emailValidation.sanitized
   };
 
   next();
@@ -254,5 +287,6 @@ module.exports = {
   validatePlate,
   validateMessage,
   validateUserId,
+  validateEmail,
   sanitizeString
 };

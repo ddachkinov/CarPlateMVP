@@ -24,6 +24,7 @@ router.get('/messages', asyncHandler(async (req, res) => {
 router.post('/claim', plateClaimLimiter, validatePlateClaimRequest, asyncHandler(async (req, res) => {
   // Use sanitized values from validation middleware
   const { plate, ownerId, email } = req.sanitized;
+  console.log('🔍 Sanitized values:', { plate, ownerId, email });
 
   let existing = await Plate.findOne({ plate: { $regex: `^${plate}$`, $options: 'i' } });
 

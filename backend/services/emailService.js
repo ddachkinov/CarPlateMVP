@@ -21,10 +21,12 @@ const sendWelcomeEmail = async ({ email, plate }) => {
     return { success: false, error: 'Email service not configured' };
   }
 
+  console.log('📧 Attempting to send welcome email to:', email, 'for plate:', plate);
+
   try {
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
-      to: [email],
+      to: email,
       subject: `Welcome to CarPlate! Plate ${plate} claimed successfully`,
       html: `
         <!DOCTYPE html>
@@ -92,7 +94,7 @@ const sendMessageNotificationEmail = async ({ email, plate, message, senderInfo 
 
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
-      to: [email],
+      to: email,
       subject: `${isUrgent ? '🚨 URGENT' : '💬'} New message for your plate ${plate}`,
       html: `
         <!DOCTYPE html>

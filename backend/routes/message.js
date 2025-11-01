@@ -23,19 +23,31 @@ router.post('/', messageRateLimiter, validateMessageRequest, asyncHandler(async 
   const newMessage = new Message({ plate, message, senderId });
   await newMessage.save();
 
+  // Refetch plate to ensure we have the latest version
+  existing = await Plate.findOne({ plate });
+
+  console.log('🔍 Checking if plate is claimed:', { plate, ownerId: existing?.ownerId });
+
   // If plate is claimed, send email notification to owner
   if (existing && existing.ownerId) {
     const owner = await User.findOne({ userId: existing.ownerId });
 
-    if (owner && owner.email && owner.notificationPreference === 'email') {
+    console.log('👤 Found owner:', { userId: owner?.userId, email: owner?.email, notificationPreference: owner?.notificationPreference });
+
+    if (owner && owner.email) {
       // Send email notification (async, don't wait for it)
+      console.log('📧 Sending notification email to:', owner.email);
       sendMessageNotificationEmail({
         email: owner.email,
         plate,
         message,
         senderInfo: senderId
       }).catch(err => console.error('Failed to send notification email:', err));
+    } else {
+      console.log('⚠️ Owner has no email or notification preference not set');
     }
+  } else {
+    console.log('⚠️ Plate not claimed, no notification sent');
   }
 
   res.status(201).json({ message: 'Message saved.' });
