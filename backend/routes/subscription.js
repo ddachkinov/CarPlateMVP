@@ -95,7 +95,7 @@ router.post('/create-portal-session', asyncHandler(async (req, res) => {
  * POST /api/subscription/webhook
  * Handle Stripe webhook events
  */
-router.post('/webhook', express.raw({ type: 'application/json' }), asyncHandler(async (req, res) => {
+router.post('/webhook', asyncHandler(async (req, res) => {
   const signature = req.headers['stripe-signature'];
 
   try {

@@ -28,12 +28,15 @@ const AdminDashboard = () => {
         setIsAuthenticated(true);
         localStorage.setItem('adminKey', adminKey);
       } else {
+        const errorData = await response.json().catch(() => ({}));
         setIsAuthenticated(false);
-        toast.error('Invalid admin key');
+        toast.error(errorData.error || `Invalid admin key (Status: ${response.status})`);
+        console.error('Admin auth failed:', errorData);
       }
     } catch (error) {
       console.error('Auth check failed:', error);
       setIsAuthenticated(false);
+      toast.error('Failed to connect to admin API');
     }
   };
 

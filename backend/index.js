@@ -15,6 +15,11 @@ process.on('uncaughtException', handleUncaughtException);
 
 const app = express(); // <--- APP MUST BE CREATED FIRST
 app.use(cors());
+
+// Stripe webhook needs raw body, must come BEFORE express.json()
+app.use('/api/subscription/webhook', express.raw({ type: 'application/json' }));
+
+// JSON body parser for all other routes
 app.use(express.json());
 
 // MongoDB connection with error handling
