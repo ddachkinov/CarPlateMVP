@@ -21,7 +21,8 @@
     "openai": "^6.7.0",
     "rate-limit-redis": "^4.2.3",
     "redis": "^5.9.0",
-    "resend": "^4.0.1"
+    "resend": "^4.0.1",
+    "stripe": "^19.2.0"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

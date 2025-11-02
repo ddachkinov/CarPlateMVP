@@ -46,7 +46,7 @@ const validatePlate = (plate) => {
  * - No script tags or dangerous content
  * - Predefined messages are always valid
  */
-const validateMessage = (message, isGuest = false) => {
+const validateMessage = (message, isGuest = false, isPremium = false) => {
   if (!message || typeof message !== 'string') {
     return { valid: false, error: 'Message is required' };
   }
@@ -70,7 +70,16 @@ const validateMessage = (message, isGuest = false) => {
   if (isGuest) {
     return {
       valid: false,
-      error: 'Guests can only send predefined safety messages. Please register to send custom messages.'
+      error: 'Guests can only send predefined safety messages. Please claim a plate to send custom messages.'
+    };
+  }
+
+  // Non-premium registered users also limited to predefined messages
+  if (!isPremium) {
+    return {
+      valid: false,
+      error: 'Custom messages are a premium feature. Upgrade to Premium to send custom messages.',
+      premiumRequired: true
     };
   }
 
@@ -164,18 +173,31 @@ const validateMessageRequest = async (req, res, next) => {
     return res.status(400).json({ error: userValidation.error });
   }
 
-  // Determine if user is a guest by checking if they own any plates
+  // Determine if user is a guest and check premium status
   let isGuest = true;
+  let isPremium = false;
+
   if (senderId) {
+    const User = require('../models/User');
     const Plate = require('../models/Plate');
-    const ownedPlates = await Plate.find({ ownerId: senderId });
+
+    const [user, ownedPlates] = await Promise.all([
+      User.findOne({ userId: senderId }),
+      Plate.find({ ownerId: senderId })
+    ]);
+
     isGuest = ownedPlates.length === 0;
+    isPremium = user?.premium === true && user?.subscriptionStatus === 'active';
   }
 
   // Validate message
-  const messageValidation = validateMessage(message, isGuest);
+  const messageValidation = validateMessage(message, isGuest, isPremium);
   if (!messageValidation.valid) {
-    return res.status(400).json({ error: messageValidation.error });
+    const statusCode = messageValidation.premiumRequired ? 402 : 400; // 402 Payment Required
+    return res.status(statusCode).json({
+      error: messageValidation.error,
+      premiumRequired: messageValidation.premiumRequired || false
+    });
   }
 
   // Attach sanitized values to request

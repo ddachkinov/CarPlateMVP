@@ -59,6 +59,9 @@ app.use('/api/report', reportRoutes);
 const adminRoutes = require('./routes/admin');
 app.use('/api/admin', adminRoutes);
 
+const subscriptionRoutes = require('./routes/subscription');
+app.use('/api/subscription', subscriptionRoutes);
+
 // Test route
 app.get('/', (req, res) => {
   res.send('API is working');

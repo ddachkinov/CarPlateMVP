@@ -13,7 +13,17 @@ const userSchema = new mongoose.Schema({
   showPlate: { type: Boolean, default: false },  // If true, reveal user's plate when sending messages
   email: { type: String },                       // User's email for notifications
   emailVerified: { type: Boolean, default: false }, // Email verification status
-  notificationPreference: { type: String, enum: ['email', 'none'], default: 'email' } // How user wants to receive notifications
+  notificationPreference: { type: String, enum: ['email', 'none'], default: 'email' }, // How user wants to receive notifications
+
+  // Stripe/Subscription fields
+  stripeCustomerId: { type: String },            // Stripe customer ID
+  stripeSubscriptionId: { type: String },        // Stripe subscription ID
+  subscriptionStatus: {                          // active | canceled | past_due | trialing
+    type: String,
+    enum: ['active', 'canceled', 'past_due', 'trialing', 'incomplete', 'incomplete_expired', 'unpaid'],
+    default: null
+  },
+  subscriptionEndDate: { type: Date }            // When subscription ends/renews
 });
 
 module.exports = mongoose.model('User', userSchema);
