@@ -47,7 +47,19 @@ const PlateList = ({ plates, messages }) => {
     <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
       <h2>📥 Inbox</h2>
       {plates.length === 0 ? (
-        <p style={{ color: '#777' }}>No messages received yet.</p>
+        <div style={{
+          textAlign: 'center',
+          padding: '3rem 2rem',
+          backgroundColor: '#f8f9fa',
+          borderRadius: '8px',
+          marginTop: '2rem'
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '1rem' }}>📬</div>
+          <h3 style={{ color: '#666', marginBottom: '0.5rem' }}>No messages yet</h3>
+          <p style={{ color: '#999', fontSize: '14px' }}>
+            Messages sent to your claimed plates will appear here
+          </p>
+        </div>
       ) : (
         <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
           {plates.map((p) => {

@@ -6,6 +6,7 @@ import './App.css';
 import { getUserMessages } from './api/plates';
 import LoginPage from './LoginPage';
 import ProfilePage from './ProfilePage';
+import LoadingSpinner from './LoadingSpinner';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -217,7 +218,7 @@ useEffect(() => {
       )}
 
       {loading ? (
-        <p>Loading...</p>
+        <LoadingSpinner message="Sending message..." />
       ) : (
         <>
           {view === 'inbox' && <PlateList plates={inboxPlates} messages={inboxMessages} />}

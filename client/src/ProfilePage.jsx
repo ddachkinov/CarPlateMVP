@@ -60,7 +60,13 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
     }
   };
 
-  const handleUnclaim = async (plateId) => {
+  const handleUnclaim = async (plateId, plateNumber) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to unclaim plate ${plateNumber}?\n\nYou will stop receiving notifications for this plate.`
+    );
+
+    if (!confirmed) return;
+
     try {
       await fetch(`${process.env.REACT_APP_API_URL}/plates/${plateId}?ownerId=${userId}`, {
         method: 'DELETE'
@@ -87,7 +93,7 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
     <li key={p._id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
       <span style={{ fontWeight: 'bold' }}>{p.plate}</span>
       <button
-        onClick={() => handleUnclaim(p._id)}
+        onClick={() => handleUnclaim(p._id, p.plate)}
         style={{
           marginLeft: '1rem',
           padding: '0.25rem 0.5rem',
