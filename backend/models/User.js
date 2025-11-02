@@ -3,7 +3,10 @@ const mongoose = require('mongoose');
 const userSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true },
   verified: { type: Boolean, default: false },   // Plate verification status (remains false until verified)
-  trustScore: { type: Number, default: 100 },
+  trustScore: { type: Number, default: 100 },    // Trust score (decreases with reports, auto-block at <50)
+  blocked: { type: Boolean, default: false },     // User blocked due to low trust score or admin action
+  blockedReason: { type: String },               // Reason for blocking
+  blockedAt: { type: Date },                     // When user was blocked
   createdAt: { type: Date, default: Date.now },
   nickname: { type: String, default: '' },       // User's chosen display name
   premium: { type: Boolean, default: false },    // Premium subscriber flag

@@ -6,12 +6,13 @@ import './App.css';
 import { getUserMessages } from './api/plates';
 import LoginPage from './LoginPage';
 import ProfilePage from './ProfilePage';
+import AdminDashboard from './AdminDashboard';
 import LoadingSpinner from './LoadingSpinner';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
-  const [view, setView] = useState('inbox'); // 'inbox' or 'profile'
+  const [view, setView] = useState('inbox'); // 'inbox', 'profile', or 'admin'
   const [plate, setPlate] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -200,6 +201,21 @@ useEffect(() => {
         >
           👤 Profile
         </button>
+
+        <button
+          onClick={() => setView('admin')}
+          style={{
+            padding: '0.5rem 1.5rem',
+            borderRadius: '6px',
+            border: view === 'admin' ? '2px solid #dc3545' : '1px solid #ccc',
+            backgroundColor: view === 'admin' ? '#ffe6e6' : 'white',
+            color: view === 'admin' ? '#dc3545' : '#555',
+            fontWeight: view === 'admin' ? 'bold' : 'normal',
+            cursor: 'pointer'
+          }}
+        >
+          🛡️ Admin
+        </button>
       </div>
 
       <h1>🚗 CarPlate</h1>
@@ -231,6 +247,8 @@ useEffect(() => {
               onPlateChanged={handlePlateChanged}
             />
           )}
+
+          {view === 'admin' && <AdminDashboard />}
         </>
       )}
     </div>

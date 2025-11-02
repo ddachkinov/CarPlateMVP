@@ -12,6 +12,10 @@ export const getOwnedPlates = (userId) => API.get(`/plates/owned/${userId}`);
 export const registerUser = (userId) => API.post('/user/register', { userId });
 export const getUserMessages = (userId) => API.get(`/plates/inbox/${userId}`);
 
+// Trust & Safety
+export const reportMessage = (data) => API.post('/report', data);
+export const getUserTrustScore = (userId) => API.get(`/report/user/${userId}`);
+
 
 // 🛠️ Future enhancement (not in MVP):
 // When claiming a plate, we'll instead POST a verification request with:

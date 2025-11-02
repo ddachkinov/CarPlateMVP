@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { reportMessage } from './api/plates';
+import { toast } from 'react-toastify';
 
 const formatRelativeTime = (dateString) => {
   const date = new Date(dateString);
@@ -9,38 +11,53 @@ const formatRelativeTime = (dateString) => {
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
 
   return date.toLocaleDateString();
-}; 
+};
 
 const normalizePlate = (plate) => plate.trim().toUpperCase();
 
-// const formatDate = (isoDate) => {
-//   const date = new Date(isoDate);
-//   return date.toLocaleString();
-// };
-
 const PlateList = ({ plates, messages }) => {
-  const [reportedSenders, setReportedSenders] = useState([]);
+  const [reportedMessages, setReportedMessages] = useState(new Set());
   const userId = localStorage.getItem('userId') || 'guest';
 
   useEffect(() => {
-    const stored = localStorage.getItem('reportedSenders');
+    // Load reported messages from localStorage
+    const stored = localStorage.getItem('reportedMessages');
     if (stored) {
-      setReportedSenders(JSON.parse(stored));
-    } else {
-      localStorage.setItem('reportedSenders', JSON.stringify([]));
-      setReportedSenders([]);
+      setReportedMessages(new Set(JSON.parse(stored)));
     }
   }, []);
 
-  const handleReport = (senderId) => {
-    if (!senderId || reportedSenders.includes(senderId)) return;
+  const handleReport = async (messageId, senderId, reason = 'Inappropriate content') => {
+    if (!messageId || reportedMessages.has(messageId)) return;
 
-    const currentTrust = parseInt(localStorage.getItem('trustScore') || '0', 10);
-    localStorage.setItem('trustScore', Math.max(currentTrust - 2, 0));
+    try {
+      const response = await reportMessage({
+        messageId,
+        reporterId: userId,
+        reason
+      });
 
-    const updated = [...reportedSenders, senderId];
-    setReportedSenders(updated);
-    localStorage.setItem('reportedSenders', JSON.stringify(updated));
+      // Update local state
+      const updated = new Set(reportedMessages);
+      updated.add(messageId);
+      setReportedMessages(updated);
+      localStorage.setItem('reportedMessages', JSON.stringify([...updated]));
+
+      // Show success toast
+      if (response.data.userBlocked) {
+        toast.success('Report submitted. User has been automatically blocked.');
+      } else {
+        toast.success('Report submitted successfully. Thank you for keeping our community safe.');
+      }
+    } catch (error) {
+      console.error('Failed to report message:', error);
+
+      if (error.response?.status === 400) {
+        toast.error(error.response.data.error || 'Unable to submit report');
+      } else {
+        toast.error('Failed to submit report. Please try again.');
+      }
+    }
   };
 
   return (
@@ -105,7 +122,7 @@ const PlateList = ({ plates, messages }) => {
                       </div>
 
                       {m.senderId !== userId && (
-                        reportedSenders.includes(m.senderId) ? (
+                        reportedMessages.has(m._id) ? (
                           <button
                             disabled
                             style={{
@@ -123,7 +140,7 @@ const PlateList = ({ plates, messages }) => {
                           </button>
                         ) : (
                           <button
-                            onClick={() => handleReport(m.senderId)}
+                            onClick={() => handleReport(m._id, m.senderId)}
                             style={{
                               padding: '4px 8px',
                               border: '1px solid red',

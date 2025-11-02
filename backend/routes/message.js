@@ -3,15 +3,74 @@ const router = express.Router();
 const Message = require('../models/Message');
 const Plate = require('../models/Plate');
 const User = require('../models/User');
+const Report = require('../models/Report');
 const { messageRateLimiter } = require('../middleware/rateLimiter');
 const { validateMessageRequest } = require('../middleware/validation');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { sendMessageNotificationEmail } = require('../services/emailService');
+const { checkUserBlocked } = require('../middleware/blockCheck');
+const { moderateAndAct } = require('../services/moderationService');
 
-// Apply rate limiting and validation middleware
-router.post('/', messageRateLimiter, validateMessageRequest, asyncHandler(async (req, res) => {
+// Apply rate limiting, validation, and block check middleware
+router.post('/', messageRateLimiter, validateMessageRequest, checkUserBlocked, asyncHandler(async (req, res) => {
   // Use sanitized values from validation middleware
   const { plate, message, senderId } = req.sanitized;
+
+  // AI Content Moderation (if configured)
+  const modResult = await moderateAndAct(message, senderId);
+
+  if (!modResult.allowed) {
+    // Message was blocked by AI moderation
+    console.log(`🚫 Message blocked by AI moderation for user ${senderId}`);
+
+    // Create auto-report for the blocked message
+    const tempMessage = new Message({ plate, message, senderId });
+    await tempMessage.save();
+
+    const autoReport = new Report({
+      reportedUserId: senderId,
+      reporterId: 'system-ai-moderator',
+      messageId: tempMessage._id,
+      reason: `AI Moderation: ${modResult.reason}`,
+      status: 'action_taken'
+    });
+    await autoReport.save();
+
+    // Reduce user's trust score for flagged content
+    const user = await User.findOne({ userId: senderId });
+    if (user) {
+      const newTrustScore = Math.max(user.trustScore - 20, 0);
+
+      // Auto-block if trust score is too low
+      if (newTrustScore < 50) {
+        await User.updateOne(
+          { userId: senderId },
+          {
+            trustScore: newTrustScore,
+            blocked: true,
+            blockedReason: 'Automatic block: AI-detected policy violation',
+            blockedAt: new Date()
+          }
+        );
+      } else {
+        await User.updateOne({ userId: senderId }, { trustScore: newTrustScore });
+      }
+    }
+
+    return res.status(403).json({
+      error: 'Message blocked',
+      reason: 'Your message was flagged for violating our community guidelines.',
+      moderation: {
+        flagged: true,
+        severity: modResult.severity
+      }
+    });
+  }
+
+  // If flagged but allowed, log for review
+  if (modResult.flagged && modResult.action === 'flag') {
+    console.log(`⚠️  Message flagged for review: ${senderId} - ${modResult.reason}`);
+  }
 
   // Create plate if it doesn't exist
   let existing = await Plate.findOne({ plate });

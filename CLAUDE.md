@@ -83,6 +83,46 @@ CarPlateApp/
 - `message`: Message content
 - `createdAt`: Timestamp
 
+### Trust & Safety Architecture
+
+**Trust Score System:**
+- All users start with trust score of 100
+- Each report decreases reported user's score by 10 points
+- Automatic blocking when score drops below 50
+- Trust score displayed in user profile
+- Blocked users cannot send messages or claim plates
+
+**Report Model** (backend/models/Report.js):
+- `reportedUserId`: User being reported
+- `reporterId`: User who submitted the report
+- `messageId`: Reference to the reported message
+- `reason`: Report reason/description
+- `status`: pending | reviewed | dismissed | action_taken
+- `adminNotes`: Admin comments on the report
+- `reviewedBy`, `reviewedAt`: Admin review tracking
+
+**Blocking System:**
+- User.blocked field prevents all message/plate actions
+- Block check middleware (`checkUserBlocked`) on all user actions
+- Automatic blocking when trust score < 50
+- Admin can manually block/unblock users
+- Blocked users see clear error messages
+
+**AI Content Moderation** (Optional):
+- OpenAI Moderation API integration
+- Automatically screens all messages before sending
+- Severity levels: high (auto-block), medium (flag for review), low (allow but log)
+- Creates automatic reports for flagged content
+- Reduces trust score by 20 points for AI-detected violations
+- Falls back gracefully if OpenAI API key not configured
+
+**Admin Dashboard** (`/admin` route in frontend):
+- Secure admin authentication via `X-Admin-Key` header
+- View all reports with filtering (pending, reviewed, dismissed)
+- Take actions: block user, reduce trust, dismiss report
+- User management: view all users, filter by blocked/trust score
+- Statistics dashboard: total users, blocked users, pending reports, average trust score
+
 ### Key API Endpoints
 
 **Plates Routes** (`/api/plates`):
@@ -97,6 +137,17 @@ CarPlateApp/
 
 **User Routes** (`/api/user`):
 - `POST /register` - Register/update user
+
+**Report Routes** (`/api/report`):
+- `POST /` - Submit a message report (decrements trust score, auto-blocks if needed)
+- `GET /user/:userId` - Get user's trust score and blocked status
+
+**Admin Routes** (`/api/admin`) - Requires `X-Admin-Key` header:
+- `GET /stats` - Dashboard statistics (total users, blocked users, pending reports, etc.)
+- `GET /reports?status=pending` - Get all reports with optional status filter
+- `PATCH /reports/:reportId` - Update report status and take action (block, adjust trust)
+- `GET /users` - Get all users with optional filtering (blocked, trust score range)
+- `PATCH /users/:userId` - Update user (block/unblock, adjust trust score)
 
 ### User Types & Authentication Flow
 
@@ -135,6 +186,11 @@ CarPlateApp/
 - `MONGO_URI`: MongoDB connection string
 - `MONGO_DB_NAME`: Database name
 - `PORT`: Server port (defaults to 5001)
+- `RESEND_API_KEY`: Resend API key for email notifications
+- `FROM_EMAIL`: Sender email address for notifications
+- `OPENAI_API_KEY`: (Optional) OpenAI API key for AI content moderation
+- `ADMIN_KEY`: Secret key for admin dashboard authentication
+- `REDIS_HOST`, `REDIS_PORT`: (Optional) Redis for distributed rate limiting
 
 ### Development Patterns
 
@@ -165,10 +221,13 @@ CarPlateApp/
 4. **Guest Restrictions**: Unverified users limited to predefined messages with 1-minute rate limiting
 
 **Safety & Trust Features:**
-1. **Trust Score System**: All users start with score of 10, decremented by reports
-2. **Reporting System**: Users can report inappropriate messages
-3. **Plate Normalization**: All plates stored as uppercase and trimmed for consistency
-4. **Privacy Protection**: Photos never stored, only plate text extracted via OCR
+1. **Server-Side Trust Score System**: All users start with score of 100, decremented by reports (10 points per report)
+2. **Automatic User Blocking**: Users automatically blocked when trust score drops below 50
+3. **Message Reporting System**: Backend API for reporting inappropriate messages with admin review
+4. **AI Content Moderation**: Optional OpenAI integration for automatic message screening (blocks high-severity violations)
+5. **Admin Dashboard**: Full admin interface for managing reports, users, and trust scores
+6. **Plate Normalization**: All plates stored as uppercase and trimmed for consistency
+7. **Privacy Protection**: Photos never stored, only plate text extracted via OCR
 
 ### Current MVP Status & Limitations
 
@@ -179,16 +238,19 @@ CarPlateApp/
 - ✅ OCR integration with image resize
 - ✅ Inbox system for claimed plates
 - ✅ Message grouping for duplicates
-- ✅ Basic trust score and reporting system
+- ✅ **Server-side trust score and reporting system**
+- ✅ **Automatic user blocking (trust score < 50)**
+- ✅ **AI content moderation with OpenAI (optional)**
+- ✅ **Admin dashboard for report/user management**
+- ✅ **Email notifications (Resend integration)**
 - ✅ Plate normalization and data consistency
+- ✅ Toast notifications and loading states
+- ✅ Health monitoring endpoint
 
-**MVP Limitations (Future Enhancements):**
+**Current Limitations (Future Enhancements):**
 - No actual plate verification (immediate ownership on claim)
 - Simple localStorage-based authentication (no passwords/OAuth)
-- No admin interface for managing users/plates
-- Limited backend rate limiting (mostly frontend restrictions)
 - No real-time notifications (manual refresh required)
-- Trust score stored locally vs server-side tracking
 - No premium monetization system implemented
 - No advanced inbox features (grouping by sender, importance flags)
 
@@ -220,11 +282,61 @@ When working on this codebase:
 - All plates normalized to uppercase for consistency
 - Guest users have 1-minute rate limiting on message sending
 - Inbox auto-refreshes when plates are claimed/unclaimed
-- Trust score decrements locally when users report others (future: server-side)
+- Trust score managed server-side with automatic blocking
+- AI moderation is optional - gracefully degrades if OPENAI_API_KEY not set
+- Admin dashboard requires ADMIN_KEY in environment variables
 
 ## Session History
 
-### 2025-11-02
+### 2025-11-02 (Session 2)
+**Completed - Trust & Safety Enhancements (Option 2):**
+
+**Phase 1: Backend Trust System**
+- Created Report model for tracking message reports (status, admin notes, review tracking)
+- Updated User model with blocked status fields (blocked, blockedReason, blockedAt)
+- Built report submission endpoint with automatic trust score decrement
+- Implemented automatic blocking when trust score drops below 50
+- Added block check middleware to prevent blocked users from taking actions
+
+**Phase 2: Admin Interface**
+- Created comprehensive admin API routes with secure authentication (X-Admin-Key)
+- Built AdminDashboard component with tabs for stats, reports, and users
+- Admin can view/filter reports and take actions (block user, reduce trust, dismiss)
+- User management with ability to manually block/unblock users
+- Real-time statistics dashboard (total users, blocked users, pending reports, avg trust score)
+
+**Phase 3: AI Content Moderation**
+- Integrated OpenAI Moderation API for automatic message screening
+- Severity-based auto-actions: high (block), medium (flag), low (allow but log)
+- Automatic report creation for AI-flagged content
+- Trust score penalty (20 points) for AI-detected violations
+- Graceful degradation when OpenAI API key not configured
+
+**Phase 4: Frontend Updates**
+- Updated PlateList to use server-side reporting API
+- Changed from tracking reported senders to reported messages
+- Added trust score display in ProfilePage with color-coded status
+- Blocked status badge and reason display for blocked users
+- Toast notifications for all trust & safety actions
+
+**Phase 5: Testing & Documentation**
+- Tested backend server startup and health endpoint
+- Updated CLAUDE.md with complete Trust & Safety architecture
+- Documented all new API endpoints and environment variables
+- Added development notes for trust score thresholds and AI moderation
+
+**Key Changes:**
+- Trust score now server-side (was localStorage)
+- Automatic blocking at score < 50 (10 points per report, 20 for AI violations)
+- Optional AI moderation with OpenAI
+- Full admin dashboard for moderation
+- Trust score visible in user profile
+
+**Environment Variables Added:**
+- `OPENAI_API_KEY`: (Optional) For AI content moderation
+- `ADMIN_KEY`: Required for admin dashboard access
+
+### 2025-11-02 (Session 1)
 **Completed - Production Polish & Readiness (Option 1):**
 
 **Phase 1: Deployment & Environment**

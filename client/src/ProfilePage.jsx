@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { claimPlate } from './api/plates';
+import React, { useState, useEffect } from 'react';
+import { claimPlate, getUserTrustScore } from './api/plates';
 import { toast } from 'react-toastify';
 
 const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
@@ -7,6 +7,23 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [trustData, setTrustData] = useState(null);
+
+  useEffect(() => {
+    // Fetch user's trust score
+    const fetchTrustScore = async () => {
+      try {
+        const response = await getUserTrustScore(userId);
+        setTrustData(response.data);
+      } catch (err) {
+        console.error('Failed to fetch trust score:', err);
+      }
+    };
+
+    if (userId) {
+      fetchTrustScore();
+    }
+  }, [userId]);
 
   const handleClaim = async () => {
     if (!newPlate.trim()) {
@@ -78,12 +95,63 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
     }
   };  
 
+  const getTrustScoreColor = (score) => {
+    if (score >= 80) return '#28a745';
+    if (score >= 50) return '#ffc107';
+    return '#dc3545';
+  };
+
   return (
     <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
       <h2>🧑 Your Profile</h2>
       <p style={{ fontSize: '0.9rem', color: '#555' }}>
         Your anonymous ID: <code>{userId}</code>
       </p>
+
+      {/* Trust Score Display */}
+      {trustData && (
+        <div style={{
+          marginTop: '1rem',
+          padding: '1rem',
+          backgroundColor: trustData.blocked ? '#ffe6e6' : '#f8f9fa',
+          borderRadius: '8px',
+          borderLeft: `4px solid ${trustData.blocked ? '#dc3545' : getTrustScoreColor(trustData.trustScore)}`
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <strong>Trust Score:</strong>
+              <span style={{
+                marginLeft: '0.5rem',
+                fontSize: '1.5rem',
+                fontWeight: 'bold',
+                color: getTrustScoreColor(trustData.trustScore)
+              }}>
+                {trustData.trustScore}/100
+              </span>
+            </div>
+            {trustData.blocked && (
+              <span style={{
+                padding: '0.25rem 0.5rem',
+                backgroundColor: '#dc3545',
+                color: 'white',
+                borderRadius: '4px',
+                fontSize: '0.75rem',
+                fontWeight: 'bold'
+              }}>
+                BLOCKED
+              </span>
+            )}
+          </div>
+          {trustData.blocked && (
+            <p style={{ marginTop: '0.5rem', color: '#dc3545', fontSize: '0.875rem' }}>
+              <strong>Reason:</strong> {trustData.blockedReason}
+            </p>
+          )}
+          <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', marginBottom: 0 }}>
+            Your trust score affects your ability to send messages. Report violations to keep the community safe.
+          </p>
+        </div>
+      )}
 
       {ownedPlates.length > 0 ? (
         <>

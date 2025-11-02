@@ -53,6 +53,12 @@ app.use('/api/message', messageRoute);
 const userRoutes = require('./routes/user');
 app.use('/api/user', userRoutes);
 
+const reportRoutes = require('./routes/report');
+app.use('/api/report', reportRoutes);
+
+const adminRoutes = require('./routes/admin');
+app.use('/api/admin', adminRoutes);
+
 // Test route
 app.get('/', (req, res) => {
   res.send('API is working');
