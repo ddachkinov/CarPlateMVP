@@ -5,8 +5,6 @@ import { toast } from 'react-toastify';
 const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
   const [newPlate, setNewPlate] = useState('');
   const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [trustData, setTrustData] = useState(null);
 
   useEffect(() => {
@@ -250,31 +248,6 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
       >
         Claim Plate
       </button>
-
-      {error && (
-        <p style={{
-          color: '#dc3545',
-          marginTop: '1rem',
-          padding: '0.5rem',
-          backgroundColor: '#f8d7da',
-          borderRadius: '4px',
-          border: '1px solid #f5c6cb'
-        }}>
-          {error}
-        </p>
-      )}
-      {success && (
-        <p style={{
-          color: '#155724',
-          marginTop: '1rem',
-          padding: '0.5rem',
-          backgroundColor: '#d4edda',
-          borderRadius: '4px',
-          border: '1px solid #c3e6cb'
-        }}>
-          {success}
-        </p>
-      )}
     </div>
   );
 };

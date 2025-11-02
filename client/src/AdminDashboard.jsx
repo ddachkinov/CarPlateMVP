@@ -147,6 +147,7 @@ const AdminDashboard = () => {
     } else if (isAuthenticated && activeTab === 'users') {
       fetchUsers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, activeTab]);
 
   // Login form

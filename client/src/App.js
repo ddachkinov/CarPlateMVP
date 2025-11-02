@@ -16,13 +16,9 @@ function App() {
   const [plate, setPlate] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
   const [ownedPlates, setOwnedPlates] = useState([]);
   const [inbox, setInbox] = useState([]);
   const [userId, setUserId] = useState(localStorage.getItem('userId') || '');
-
-  const isGuest = !ownedPlates.length;
 
 useEffect(() => {
   // ensure userId exists and is registered
