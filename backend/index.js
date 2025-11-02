@@ -60,11 +60,25 @@ app.get('/', (req, res) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({
+  const { redisClient } = require('./middleware/rateLimiter');
+  const { isConfigured: isEmailConfigured } = require('./services/emailService');
+
+  const health = {
     status: 'ok',
     timestamp: new Date().toISOString(),
-    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
-  });
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development',
+    services: {
+      mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+      redis: redisClient() ? 'connected' : 'using memory store',
+      email: isEmailConfigured() ? 'configured' : 'not configured'
+    },
+    version: require('./package.json').version
+  };
+
+  // Return 503 if critical services are down
+  const isHealthy = mongoose.connection.readyState === 1;
+  res.status(isHealthy ? 200 : 503).json(health);
 });
 
 // 404 handler - must be AFTER all routes

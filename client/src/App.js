@@ -6,6 +6,8 @@ import './App.css';
 import { getUserMessages } from './api/plates';
 import LoginPage from './LoginPage';
 import ProfilePage from './ProfilePage';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   const [view, setView] = useState('inbox'); // 'inbox' or 'profile'
@@ -93,7 +95,7 @@ useEffect(() => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (plate.trim().length < 2 || message.trim().length < 2) {
-      alert('Plate and Message must be at least 2 characters!');
+      toast.error('Plate and Message must be at least 2 characters!');
       return;
     }
 
@@ -115,8 +117,7 @@ useEffect(() => {
 
       setPlate('');
       setMessage('');
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 2000);
+      toast.success('✅ Message sent successfully!');
     } catch (err) {
       console.error('❌ Error during submit:', err.response?.data || err.message);
 
@@ -125,18 +126,18 @@ useEffect(() => {
         // Rate limit error
         const retryAfter = err.response.headers['retry-after'] || 60;
         const minutes = Math.ceil(retryAfter / 60);
-        setError(`⏱ Too many requests. Please wait ${minutes} minute${minutes > 1 ? 's' : ''} before sending another message.`);
+        toast.warning(`⏱ Too many requests. Please wait ${minutes} minute${minutes > 1 ? 's' : ''} before sending another message.`, {
+          autoClose: 5000
+        });
       } else if (err.response?.status === 400) {
         // Validation error
-        setError(err.response.data.error || '❌ Invalid input. Please check your message.');
+        toast.error(err.response.data.error || 'Invalid input. Please check your message.');
       } else if (err.response?.status === 403) {
         // Forbidden (e.g., guest trying to claim plate)
-        setError(err.response.data.error || '❌ You do not have permission to perform this action.');
+        toast.error(err.response.data.error || 'You do not have permission to perform this action.');
       } else {
-        setError('❌ Failed to send message. Please try again.');
+        toast.error('Failed to send message. Please try again.');
       }
-
-      setTimeout(() => setError(''), 5000);
     }
 
     setLoading(false);
@@ -148,6 +149,19 @@ useEffect(() => {
 
   return (
     <div>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+
       <div
         style={{
           display: 'flex',
@@ -189,16 +203,6 @@ useEffect(() => {
 
       <h1>🚗 CarPlate</h1>
 
-      <p
-        style={{
-          color: 'green',
-          opacity: success ? 1 : 0,
-          transition: 'opacity 0.5s ease-in-out'
-        }}
-      >
-        ✅ Message sent successfully!
-      </p>
-
       {/* 🧩 FORM ONLY IN INBOX */}
       {view === 'inbox' && (
         <PlateForm
@@ -216,18 +220,6 @@ useEffect(() => {
         <p>Loading...</p>
       ) : (
         <>
-          {error && (
-            <p
-              style={{
-                color: 'red',
-                opacity: error ? 1 : 0,
-                transition: 'opacity 0.5s ease-in-out'
-              }}
-            >
-              {error}
-            </p>
-          )}
-
           {view === 'inbox' && <PlateList plates={inboxPlates} messages={inboxMessages} />}
 
           {view === 'profile' && (

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { claimPlate } from './api/plates';
+import { toast } from 'react-toastify';
 
 const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
   const [newPlate, setNewPlate] = useState('');
@@ -9,18 +10,18 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
 
   const handleClaim = async () => {
     if (!newPlate.trim()) {
-      setError('❌ Please enter a plate number');
+      toast.error('Please enter a plate number');
       return;
     }
     if (!email.trim()) {
-      setError('❌ Please enter your email to receive notifications');
+      toast.error('Please enter your email to receive notifications');
       return;
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
-      setError('❌ Please enter a valid email address');
+      toast.error('Please enter a valid email address');
       return;
     }
 
@@ -33,31 +34,29 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
       const { unreadCount, message } = response.data;
 
       if (unreadCount > 0) {
-        setSuccess(`✅ Plate claimed! 🎉 ${message}`);
+        toast.success(`Plate claimed! 🎉 ${message}`, { autoClose: 5000 });
       } else {
-        setSuccess('✅ Plate claimed! You\'ll receive email notifications when someone sends you a message.');
+        toast.success('Plate claimed! You\'ll receive email notifications when someone sends you a message.', { autoClose: 5000 });
       }
 
-      setError('');
       setNewPlate('');
       setEmail('');
       refreshOwned();
     } catch (err) {
       if (err.response?.status === 409) {
-        setError('❌ This plate is already claimed by another user');
+        toast.error('This plate is already claimed by another user');
       } else if (err.response?.status === 429) {
         // Rate limit error
         const retryAfter = err.response.headers['retry-after'] || 3600;
         const hours = Math.ceil(retryAfter / 3600);
-        setError(`⏱ Too many plate claims. Please wait ${hours} hour${hours > 1 ? 's' : ''} before claiming more plates.`);
+        toast.warning(`Too many plate claims. Please wait ${hours} hour${hours > 1 ? 's' : ''} before claiming more plates.`, { autoClose: 5000 });
       } else if (err.response?.status === 400) {
-        setError(err.response.data.error || '❌ Invalid input');
+        toast.error(err.response.data.error || 'Invalid input');
       } else if (err.response?.status === 403) {
-        setError(err.response.data.error || '❌ You do not have permission to claim plates');
+        toast.error(err.response.data.error || 'You do not have permission to claim plates');
       } else {
-        setError('❌ Failed to claim plate');
+        toast.error('Failed to claim plate');
       }
-      setSuccess('');
     }
   };
 
@@ -66,9 +65,10 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
       await fetch(`${process.env.REACT_APP_API_URL}/plates/${plateId}?ownerId=${userId}`, {
         method: 'DELETE'
       });
+      toast.success('Plate unclaimed successfully');
       refreshOwned();
     } catch (err) {
-      alert('❌ Failed to unclaim plate');
+      toast.error('Failed to unclaim plate');
     }
   };  
 
