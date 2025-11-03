@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading, isGuest }) => {
+const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading, isGuest, onUpgradeClick }) => {
   const [loadingOCR, setLoadingOCR] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
@@ -135,7 +135,29 @@ const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading
     />
 
 {showWarning && (
-  <p className="text-red-500 text-sm">🛑 Guests can only send predefined messages.</p>
+  <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
+    <p style={{ color: '#dc3545', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+      🛑 Guests can only send predefined messages.
+    </p>
+    {onUpgradeClick && (
+      <button
+        type="button"
+        onClick={onUpgradeClick}
+        style={{
+          padding: '0.5rem 1rem',
+          backgroundColor: '#ffc107',
+          color: '#000',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          fontWeight: 'bold',
+          fontSize: '0.875rem'
+        }}
+      >
+        ⭐ Claim a Plate to Unlock Custom Messages
+      </button>
+    )}
+  </div>
 )}
 
   </>

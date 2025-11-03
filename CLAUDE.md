@@ -120,8 +120,50 @@ CarPlateApp/
 - Secure admin authentication via `X-Admin-Key` header
 - View all reports with filtering (pending, reviewed, dismissed)
 - Take actions: block user, reduce trust, dismiss report
-- User management: view all users, filter by blocked/trust score
+- User management: view all users, filter by blocked/trust score, view owned plates
 - Statistics dashboard: total users, blocked users, pending reports, average trust score
+- Premium badge display for premium users
+
+### Premium Features Architecture
+
+**Subscription System:**
+- Stripe integration for payment processing ($4.99/month)
+- Two tiers: Free (predefined messages only) vs Premium (custom messages)
+- Subscription fields in User model: `stripeCustomerId`, `stripeSubscriptionId`, `subscriptionStatus`, `subscriptionEndDate`
+- Premium status check: `user.premium === true && user.subscriptionStatus === 'active'`
+
+**Message Restrictions:**
+- Validation middleware checks premium status before allowing custom messages
+- Free users: Can only send predefined safety messages
+- Registered non-premium users: Same as free users, but can claim plates
+- Premium users: Can send any custom message (2-500 characters, sanitized)
+- Returns 402 Payment Required status when free user tries custom message
+
+**Stripe Integration:**
+- `backend/services/stripeService.js`: Stripe SDK wrapper with error handling
+- Checkout sessions for new subscriptions with metadata (userId, plan)
+- Customer portal for subscription management (cancel, update payment)
+- Webhook handling for subscription lifecycle events
+- Raw body parser middleware for webhook signature verification
+
+**Webhook Events Handled:**
+- `checkout.session.completed`: Updates stripeCustomerId and email
+- `customer.subscription.created/updated`: Sets premium=true, updates status
+- `customer.subscription.deleted`: Sets premium=false, marks as canceled
+- `invoice.payment_failed`: Updates status to past_due
+
+**Frontend UI:**
+- PricingPage component with feature comparison (Free vs Premium)
+- ProfilePage shows subscription status with upgrade/manage buttons
+- Premium badge displayed in messages, profile, and admin dashboard
+- Upgrade prompts when free users attempt custom messages (402 error handling)
+- Toast notifications with "Upgrade to Premium" button on custom message attempt
+
+**API Endpoints** (`/api/subscription`):
+- `POST /create-checkout-session`: Create Stripe checkout for new subscription
+- `POST /create-portal-session`: Open Stripe customer portal for management
+- `POST /webhook`: Handle Stripe webhook events (requires raw body)
+- `GET /status/:userId`: Get user's subscription status
 
 ### Key API Endpoints
 
@@ -168,13 +210,13 @@ CarPlateApp/
 - Can set nickname and choose to show their plate when sending
 - Profile page for managing claimed plates and settings
 
-**3. Premium Users (Future Enhancement):**
+**3. Premium Users** ($4.99/month subscription):
 - All registered user features plus:
-- Can send/receive custom messages
-- Instant notifications vs delayed batches for free users
-- Advanced inbox features (grouping, importance flags, longer storage)
-- Verification badge and priority treatment
-- Community supporter badge
+- **Can send custom messages** (not limited to predefined messages)
+- Premium badge displayed on all messages
+- Priority customer support
+- Access to Stripe customer portal for subscription management
+- Future: Instant notifications, advanced inbox features, verification badge
 
 ### Environment Configuration
 
@@ -191,6 +233,9 @@ CarPlateApp/
 - `OPENAI_API_KEY`: (Optional) OpenAI API key for AI content moderation
 - `ADMIN_KEY`: Secret key for admin dashboard authentication
 - `REDIS_HOST`, `REDIS_PORT`: (Optional) Redis for distributed rate limiting
+- `STRIPE_SECRET_KEY`: (Optional) Stripe API secret key for premium subscriptions
+- `STRIPE_WEBHOOK_SECRET`: (Optional) Stripe webhook signing secret
+- `FRONTEND_URL`: Frontend URL for Stripe redirects (defaults to http://localhost:3000)
 
 ### Development Patterns
 
@@ -243,6 +288,10 @@ CarPlateApp/
 - ✅ **AI content moderation with OpenAI (optional)**
 - ✅ **Admin dashboard for report/user management**
 - ✅ **Email notifications (Resend integration)**
+- ✅ **Premium subscription system with Stripe**
+- ✅ **Custom messages for premium users only**
+- ✅ **Premium badge display throughout UI**
+- ✅ **Subscription management (upgrade, cancel via Stripe portal)**
 - ✅ Plate normalization and data consistency
 - ✅ Toast notifications and loading states
 - ✅ Health monitoring endpoint
@@ -251,17 +300,24 @@ CarPlateApp/
 - No actual plate verification (immediate ownership on claim)
 - Simple localStorage-based authentication (no passwords/OAuth)
 - No real-time notifications (manual refresh required)
-- No premium monetization system implemented
 - No advanced inbox features (grouping by sender, importance flags)
+- Premium features limited to custom messages (future: instant notifications, advanced inbox)
+
+**⚠️ MVP MOCK MODE - Premium Subscriptions:**
+- Premium subscription system is currently in **MOCK MODE** for MVP testing
+- Set `MOCK_PREMIUM=true` in backend and `REACT_APP_MOCK_PREMIUM=true` in frontend to enable
+- Allows instant premium toggling without Stripe configuration
+- See `MVP_PREMIUM_MOCK.md` for complete setup and transition guide
+- **REMOVE mock code when configuring real Stripe integration**
 
 ## Future Roadmap (from Documentation)
 
 **Priority Enhancements:**
-1. **Premium Features**: Custom messaging, instant notifications, advanced inbox
+1. ~~**Premium Features**: Custom messaging~~ **✅ COMPLETED** (instant notifications, advanced inbox still pending)
 2. **Verification System**: SMS/OAuth verification, document upload for plate ownership
-3. **Trust & Safety**: Server-side trust scoring, automatic user blocking with AI capabilities for offensive patterns, abuse prevention
-4. **Admin Tools**: Backend reporting system, user management interface, usage statistics pane
-5. **Notifications**: Push notifications with batch vs instant delivery tiers
+3. ~~**Trust & Safety**: Server-side trust scoring, automatic user blocking with AI capabilities~~  **✅ COMPLETED**
+4. ~~**Admin Tools**: Backend reporting system, user management interface, usage statistics pane~~ **✅ COMPLETED**
+5. **Notifications**: Push notifications with batch vs instant delivery tiers (partially complete - email only)
 6. **Mobile UX**: Polish upload flow, toast notifications, dark mode
 7. **Localization**: Plate region detection, international format support
 
@@ -287,6 +343,71 @@ When working on this codebase:
 - Admin dashboard requires ADMIN_KEY in environment variables
 
 ## Session History
+
+### 2025-11-03 (Session 3)
+**Completed - Premium Features Foundation (Option 3):**
+
+**Phase 1: Stripe Integration**
+- Installed Stripe SDK and configured stripe service wrapper
+- Created checkout session endpoint for new subscriptions ($4.99/month)
+- Implemented webhook handler for subscription lifecycle events
+- Added raw body parser middleware for webhook signature verification
+
+**Phase 2: Subscription Management**
+- Extended User model with Stripe subscription fields (stripeCustomerId, stripeSubscriptionId, subscriptionStatus, subscriptionEndDate)
+- Implemented subscription status endpoint for frontend
+- Built customer portal integration for subscription management
+- Webhook handlers for checkout.session.completed, subscription created/updated/deleted, payment failures
+
+**Phase 3: Premium Features**
+- Updated validation middleware to check premium status before allowing custom messages
+- Returns 402 Payment Required when non-premium users try custom messages
+- Premium check: `user.premium === true && user.subscriptionStatus === 'active'`
+- Graceful handling when Stripe keys not configured (dev mode)
+
+**Phase 4: Frontend UI**
+- Created PricingPage component with Free vs Premium feature comparison
+- Integrated pricing page into main navigation (⭐ Premium button)
+- Added upgrade prompts with toast notifications on 402 error
+- Built subscription management section in ProfilePage (shows status, billing date, upgrade/manage buttons)
+- Premium badge display in ProfilePage header, PlateList messages, and AdminDashboard
+- Disabled upgrade button until user claims a plate (email required)
+
+**Phase 5: Testing & Documentation**
+- Documented Premium Features Architecture in CLAUDE.md
+- Added Stripe environment variables documentation
+- Updated API endpoints section with subscription routes
+- Updated User Types section with premium user tier
+- Marked Premium Features as completed in roadmap
+
+**Key Features Added:**
+- Two-tier system: Free (predefined messages) vs Premium ($4.99/month, custom messages)
+- Stripe checkout and customer portal integration
+- Premium badge displayed throughout UI
+- Subscription management in user profile
+- 402 error handling with upgrade prompts
+- Backend validation prevents custom messages for non-premium users
+
+**Environment Variables Added:**
+- `STRIPE_SECRET_KEY`: Stripe API secret key (optional for dev)
+- `STRIPE_WEBHOOK_SECRET`: Stripe webhook signing secret
+- `FRONTEND_URL`: Frontend URL for Stripe redirects
+
+**Files Created:**
+- `backend/services/stripeService.js`: Stripe SDK wrapper
+- `backend/routes/subscription.js`: Subscription API endpoints
+- `client/src/PricingPage.jsx`: Pricing comparison page
+
+**Files Modified:**
+- `backend/models/User.js`: Added subscription fields
+- `backend/middleware/validation.js`: Premium status checking
+- `backend/index.js`: Raw body parser for webhooks
+- `client/src/App.js`: Premium navigation, 402 error handling
+- `client/src/ProfilePage.jsx`: Subscription management UI
+- `client/src/PlateList.jsx`: Premium badge in messages
+- `client/src/PlateForm.jsx`: Upgrade prompt for guests
+- `client/src/api/plates.js`: Subscription API functions
+- `client/src/AdminDashboard.jsx`: Premium badge in admin view
 
 ### 2025-11-02 (Session 2)
 **Completed - Trust & Safety Enhancements (Option 2):**

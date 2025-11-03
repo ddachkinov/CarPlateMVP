@@ -9,13 +9,53 @@ const {
   verifyWebhook
 } = require('../services/stripeService');
 
+// ⚠️ MVP MOCK: Remove this when Stripe is configured
+const MOCK_PREMIUM_ENABLED = process.env.MOCK_PREMIUM === 'true';
+
 /**
  * POST /api/subscription/create-checkout-session
  * Create a Stripe checkout session for premium subscription
+ *
+ * ⚠️ MVP MOCK: Falls back to mock mode if Stripe not configured and MOCK_PREMIUM=true
  */
 router.post('/create-checkout-session', asyncHandler(async (req, res) => {
-  if (!isConfigured()) {
+  // ⚠️ MVP MOCK: Allow mock upgrades for testing
+  if (!isConfigured() && !MOCK_PREMIUM_ENABLED) {
     return res.status(503).json({ error: 'Premium subscriptions not available' });
+  }
+
+  // ⚠️ MVP MOCK: If Stripe not configured but mock enabled, simulate upgrade
+  if (!isConfigured() && MOCK_PREMIUM_ENABLED) {
+    const { userId, email } = req.body;
+
+    if (!userId || !email) {
+      return res.status(400).json({ error: 'userId and email are required' });
+    }
+
+    const user = await User.findOne({ userId });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Mock: Instantly grant premium
+    await User.updateOne(
+      { userId },
+      {
+        premium: true,
+        subscriptionStatus: 'active',
+        subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        email
+      }
+    );
+
+    console.log(`🧪 MOCK: Granted premium to user ${userId}`);
+
+    // Return mock success - redirect back to app
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    return res.json({
+      sessionId: 'mock_session_' + Date.now(),
+      url: `${frontendUrl}?subscription=success&mock=true`
+    });
   }
 
   const { userId, email } = req.body;
@@ -55,10 +95,35 @@ router.post('/create-checkout-session', asyncHandler(async (req, res) => {
 /**
  * POST /api/subscription/create-portal-session
  * Create a customer portal session for subscription management
+ *
+ * ⚠️ MVP MOCK: Falls back to mock mode if Stripe not configured and MOCK_PREMIUM=true
  */
 router.post('/create-portal-session', asyncHandler(async (req, res) => {
-  if (!isConfigured()) {
+  // ⚠️ MVP MOCK: Allow mock portal for testing
+  if (!isConfigured() && !MOCK_PREMIUM_ENABLED) {
     return res.status(503).json({ error: 'Premium subscriptions not available' });
+  }
+
+  // ⚠️ MVP MOCK: If Stripe not configured but mock enabled, provide mock portal
+  if (!isConfigured() && MOCK_PREMIUM_ENABLED) {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
+    const user = await User.findOne({ userId });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    console.log(`🧪 MOCK: Opening mock portal for user ${userId}`);
+
+    // Return mock portal - just redirect back to profile
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    return res.json({
+      url: `${frontendUrl}?mock_portal=true`
+    });
   }
 
   const { userId } = req.body;
@@ -206,5 +271,48 @@ router.get('/status/:userId', asyncHandler(async (req, res) => {
     hasStripeCustomer: !!user.stripeCustomerId
   });
 }));
+
+// ⚠️ MVP MOCK ENDPOINTS - REMOVE WHEN STRIPE IS CONFIGURED
+if (MOCK_PREMIUM_ENABLED) {
+  /**
+   * POST /api/subscription/mock-toggle-premium
+   * Toggle premium status for testing (MOCK ONLY)
+   *
+   * ⚠️ REMOVE THIS ENDPOINT WHEN STRIPE IS CONFIGURED
+   */
+  router.post('/mock-toggle-premium', asyncHandler(async (req, res) => {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
+    const user = await User.findOne({ userId });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Toggle premium status
+    const newPremiumStatus = !user.premium;
+    await User.updateOne(
+      { userId },
+      {
+        premium: newPremiumStatus,
+        subscriptionStatus: newPremiumStatus ? 'active' : null,
+        subscriptionEndDate: newPremiumStatus ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null
+      }
+    );
+
+    console.log(`🧪 MOCK: Toggled premium for user ${userId} to ${newPremiumStatus}`);
+
+    res.json({
+      premium: newPremiumStatus,
+      subscriptionStatus: newPremiumStatus ? 'active' : null,
+      message: `Premium ${newPremiumStatus ? 'enabled' : 'disabled'} for testing`
+    });
+  }));
+
+  console.log('⚠️  MOCK PREMIUM ENDPOINTS ENABLED - Remember to disable when Stripe is configured!');
+}
 
 module.exports = router;

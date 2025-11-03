@@ -7,12 +7,13 @@ import { getUserMessages } from './api/plates';
 import LoginPage from './LoginPage';
 import ProfilePage from './ProfilePage';
 import AdminDashboard from './AdminDashboard';
+import PricingPage from './PricingPage';
 import LoadingSpinner from './LoadingSpinner';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
-  const [view, setView] = useState('inbox'); // 'inbox', 'profile', or 'admin'
+  const [view, setView] = useState('inbox'); // 'inbox', 'profile', 'premium', or 'admin'
   const [plate, setPlate] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -127,6 +128,29 @@ useEffect(() => {
         toast.warning(`⏱ Too many requests. Please wait ${minutes} minute${minutes > 1 ? 's' : ''} before sending another message.`, {
           autoClose: 5000
         });
+      } else if (err.response?.status === 402) {
+        // Premium required
+        toast.error(
+          <div>
+            <p>{err.response.data.error}</p>
+            <button
+              onClick={() => setView('premium')}
+              style={{
+                marginTop: '0.5rem',
+                padding: '0.5rem 1rem',
+                backgroundColor: '#ffc107',
+                color: '#000',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              Upgrade to Premium
+            </button>
+          </div>,
+          { autoClose: false }
+        );
       } else if (err.response?.status === 400) {
         // Validation error
         toast.error(err.response.data.error || 'Invalid input. Please check your message.');
@@ -199,6 +223,21 @@ useEffect(() => {
         </button>
 
         <button
+          onClick={() => setView('premium')}
+          style={{
+            padding: '0.5rem 1.5rem',
+            borderRadius: '6px',
+            border: view === 'premium' ? '2px solid #ffc107' : '1px solid #ccc',
+            backgroundColor: view === 'premium' ? '#fff8e1' : 'white',
+            color: view === 'premium' ? '#f57c00' : '#555',
+            fontWeight: view === 'premium' ? 'bold' : 'normal',
+            cursor: 'pointer'
+          }}
+        >
+          ⭐ Premium
+        </button>
+
+        <button
           onClick={() => setView('admin')}
           style={{
             padding: '0.5rem 1.5rem',
@@ -226,6 +265,7 @@ useEffect(() => {
           handleSubmit={handleSubmit}
           loading={loading}
           isGuest={!ownedPlates.length}
+          onUpgradeClick={() => setView('premium')}
         />
       )}
 
@@ -243,6 +283,8 @@ useEffect(() => {
               onPlateChanged={handlePlateChanged}
             />
           )}
+
+          {view === 'premium' && <PricingPage userId={userId} />}
 
           {view === 'admin' && <AdminDashboard />}
         </>

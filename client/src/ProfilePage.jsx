@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { claimPlate, getUserTrustScore } from './api/plates';
+import { claimPlate, getUserTrustScore, getSubscriptionStatus, createCheckoutSession, createPortalSession, mockTogglePremium } from './api/plates';
 import { toast } from 'react-toastify';
+import LoadingSpinner from './LoadingSpinner';
+
+// ⚠️ MVP MOCK - Check if mock premium is enabled
+const MOCK_PREMIUM_ENABLED = process.env.REACT_APP_MOCK_PREMIUM === 'true';
 
 const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
   const [newPlate, setNewPlate] = useState('');
   const [email, setEmail] = useState('');
   const [trustData, setTrustData] = useState(null);
+  const [subscriptionData, setSubscriptionData] = useState(null);
+  const [loadingSubscription, setLoadingSubscription] = useState(false);
 
   useEffect(() => {
     // Fetch user's trust score
@@ -18,8 +24,19 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
       }
     };
 
+    // Fetch subscription status
+    const fetchSubscription = async () => {
+      try {
+        const response = await getSubscriptionStatus(userId);
+        setSubscriptionData(response.data);
+      } catch (err) {
+        console.error('Failed to fetch subscription status:', err);
+      }
+    };
+
     if (userId) {
       fetchTrustScore();
+      fetchSubscription();
     }
   }, [userId]);
 
@@ -99,9 +116,74 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
     return '#dc3545';
   };
 
+  const handleUpgradeToPremium = async () => {
+    if (!ownedPlates.length || !trustData?.email) {
+      toast.error('Please claim a plate with your email address before upgrading');
+      return;
+    }
+
+    setLoadingSubscription(true);
+    try {
+      const response = await createCheckoutSession({
+        userId,
+        email: trustData.email
+      });
+
+      // Redirect to Stripe checkout
+      window.location.href = response.data.url;
+    } catch (err) {
+      console.error('Failed to create checkout session:', err);
+      toast.error(err.response?.data?.error || 'Failed to start checkout process');
+      setLoadingSubscription(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setLoadingSubscription(true);
+    try {
+      const response = await createPortalSession({ userId });
+
+      // Redirect to Stripe customer portal
+      window.location.href = response.data.url;
+    } catch (err) {
+      console.error('Failed to create portal session:', err);
+      toast.error(err.response?.data?.error || 'Failed to open subscription management');
+      setLoadingSubscription(false);
+    }
+  };
+
+  // ⚠️ MVP MOCK - Toggle premium for testing (REMOVE WHEN STRIPE IS CONFIGURED)
+  const handleMockTogglePremium = async () => {
+    try {
+      const response = await mockTogglePremium(userId);
+      toast.success(response.data.message);
+
+      // Refresh subscription data
+      const updatedSub = await getSubscriptionStatus(userId);
+      setSubscriptionData(updatedSub.data);
+    } catch (err) {
+      console.error('Failed to toggle premium:', err);
+      toast.error('Failed to toggle premium status');
+    }
+  };
+
   return (
     <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
-      <h2>🧑 Your Profile</h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+        <h2 style={{ margin: 0 }}>🧑 Your Profile</h2>
+        {subscriptionData?.premium && (
+          <span style={{
+            padding: '0.25rem 0.6rem',
+            backgroundColor: '#ffc107',
+            color: '#000',
+            borderRadius: '4px',
+            fontSize: '0.75rem',
+            fontWeight: 'bold'
+          }}>
+            ⭐ PREMIUM
+          </span>
+        )}
+      </div>
       <p style={{ fontSize: '0.9rem', color: '#555' }}>
         Your anonymous ID: <code>{userId}</code>
       </p>
@@ -148,6 +230,149 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
           <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', marginBottom: 0 }}>
             Your trust score affects your ability to send messages. Report violations to keep the community safe.
           </p>
+        </div>
+      )}
+
+      {/* ⚠️ MVP MOCK - Premium Toggle for Testing */}
+      {MOCK_PREMIUM_ENABLED && subscriptionData && (
+        <div style={{
+          marginTop: '1rem',
+          padding: '1rem',
+          backgroundColor: '#fff3cd',
+          borderRadius: '8px',
+          borderLeft: '4px solid #ff9800',
+          textAlign: 'center'
+        }}>
+          <p style={{ fontSize: '0.875rem', color: '#856404', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+            🧪 MVP MOCK MODE - Testing Only
+          </p>
+          <button
+            onClick={handleMockTogglePremium}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#ff9800',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: 'bold'
+            }}
+          >
+            Toggle Premium (Mock)
+          </button>
+          <p style={{ fontSize: '0.7rem', color: '#856404', marginTop: '0.5rem', marginBottom: 0 }}>
+            ⚠️ Remove REACT_APP_MOCK_PREMIUM=true when Stripe is configured
+          </p>
+        </div>
+      )}
+
+      {/* Subscription Management */}
+      {subscriptionData && (
+        <div style={{
+          marginTop: '1rem',
+          padding: '1rem',
+          backgroundColor: subscriptionData.premium ? '#fff8e1' : '#f8f9fa',
+          borderRadius: '8px',
+          borderLeft: `4px solid ${subscriptionData.premium ? '#ffc107' : '#007bff'}`
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <div>
+              <strong>Subscription:</strong>
+              <span style={{
+                marginLeft: '0.5rem',
+                fontSize: '1.2rem',
+                fontWeight: 'bold',
+                color: subscriptionData.premium ? '#f57c00' : '#007bff'
+              }}>
+                {subscriptionData.premium ? '⭐ Premium' : 'Free'}
+              </span>
+            </div>
+            {subscriptionData.premium && (
+              <span style={{
+                padding: '0.25rem 0.5rem',
+                backgroundColor: '#ffc107',
+                color: '#000',
+                borderRadius: '4px',
+                fontSize: '0.75rem',
+                fontWeight: 'bold'
+              }}>
+                ACTIVE
+              </span>
+            )}
+          </div>
+
+          {subscriptionData.premium ? (
+            <>
+              <p style={{ fontSize: '0.875rem', color: '#666', marginTop: '0.5rem' }}>
+                {subscriptionData.subscriptionStatus === 'active' && subscriptionData.subscriptionEndDate && (
+                  <>Next billing date: {new Date(subscriptionData.subscriptionEndDate).toLocaleDateString()}</>
+                )}
+                {subscriptionData.subscriptionStatus === 'canceled' && (
+                  <>Access until: {new Date(subscriptionData.subscriptionEndDate).toLocaleDateString()}</>
+                )}
+              </p>
+              <p style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.75rem' }}>
+                ✅ Custom messages • ✅ Priority support • ✅ Premium badge
+              </p>
+              {loadingSubscription ? (
+                <LoadingSpinner message="Opening subscription management..." />
+              ) : (
+                <button
+                  onClick={handleManageSubscription}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  Manage Subscription
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <p style={{ fontSize: '0.875rem', color: '#666', marginTop: '0.5rem', marginBottom: '0.75rem' }}>
+                Upgrade to Premium for $4.99/month to unlock:
+              </p>
+              <ul style={{ fontSize: '0.875rem', color: '#666', marginLeft: '1.25rem', marginBottom: '0.75rem' }}>
+                <li>Send custom messages (not just predefined ones)</li>
+                <li>Premium badge displayed on your messages</li>
+                <li>Priority customer support</li>
+              </ul>
+              {loadingSubscription ? (
+                <LoadingSpinner message="Starting checkout..." />
+              ) : (
+                <button
+                  onClick={handleUpgradeToPremium}
+                  disabled={!ownedPlates.length}
+                  style={{
+                    padding: '0.6rem 1.5rem',
+                    backgroundColor: !ownedPlates.length ? '#ccc' : '#ffc107',
+                    color: !ownedPlates.length ? '#666' : '#000',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: !ownedPlates.length ? 'not-allowed' : 'pointer',
+                    fontSize: '1rem',
+                    fontWeight: 'bold'
+                  }}
+                  title={!ownedPlates.length ? 'Claim a plate first to upgrade' : ''}
+                >
+                  ⭐ Upgrade to Premium
+                </button>
+              )}
+              {!ownedPlates.length && (
+                <p style={{ fontSize: '0.75rem', color: '#dc3545', marginTop: '0.5rem', marginBottom: 0 }}>
+                  Please claim a plate with your email before upgrading
+                </p>
+              )}
+            </>
+          )}
         </div>
       )}
 

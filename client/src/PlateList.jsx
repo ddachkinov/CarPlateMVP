@@ -112,8 +112,20 @@ const PlateList = ({ plates, messages }) => {
       }}
     >
                       <div>
-                        <div style={{ fontWeight: 'bold' }}>
-                          {m.senderId === userId ? 'You' : `From ${m.senderId}`}
+                        <div style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <span>{m.senderId === userId ? 'You' : `From ${m.senderId}`}</span>
+                          {m.senderPremium && (
+                            <span style={{
+                              padding: '0.125rem 0.4rem',
+                              backgroundColor: '#ffc107',
+                              color: '#000',
+                              borderRadius: '4px',
+                              fontSize: '0.65rem',
+                              fontWeight: 'bold'
+                            }}>
+                              ⭐ PREMIUM
+                            </span>
+                          )}
                         </div>
                         <div>{m.message}</div>
                         <div style={{ fontSize: '0.75rem', color: '#888' }}>

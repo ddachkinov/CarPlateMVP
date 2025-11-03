@@ -113,12 +113,27 @@ router.get('/user/:userId', asyncHandler(async (req, res) => {
     });
   }
 
+  // If user doesn't have email but has owned plates, get email from the first plate
+  let email = user.email;
+  if (!email) {
+    const Plate = require('../models/Plate');
+    const ownedPlate = await Plate.findOne({ ownerId: userId });
+
+    // If we found an email in owned plates, update the user record
+    if (ownedPlate?.email) {
+      email = ownedPlate.email;
+      // Backfill the email into the User document for future requests
+      await User.updateOne({ userId }, { email });
+    }
+  }
+
   res.json({
     userId: user.userId,
     trustScore: user.trustScore,
     blocked: user.blocked,
     blockedReason: user.blockedReason,
     blockedAt: user.blockedAt,
+    email,
     registered: true
   });
 }));

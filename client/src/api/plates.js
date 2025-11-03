@@ -16,6 +16,14 @@ export const getUserMessages = (userId) => API.get(`/plates/inbox/${userId}`);
 export const reportMessage = (data) => API.post('/report', data);
 export const getUserTrustScore = (userId) => API.get(`/report/user/${userId}`);
 
+// Subscription & Premium
+export const getSubscriptionStatus = (userId) => API.get(`/subscription/status/${userId}`);
+export const createCheckoutSession = (data) => API.post('/subscription/create-checkout-session', data);
+export const createPortalSession = (data) => API.post('/subscription/create-portal-session', data);
+
+// ⚠️ MVP MOCK - REMOVE WHEN STRIPE IS CONFIGURED
+export const mockTogglePremium = (userId) => API.post('/subscription/mock-toggle-premium', { userId });
+
 
 // 🛠️ Future enhancement (not in MVP):
 // When claiming a plate, we'll instead POST a verification request with:
