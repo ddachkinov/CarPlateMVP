@@ -67,6 +67,9 @@ app.use('/api/admin', adminRoutes);
 const subscriptionRoutes = require('./routes/subscription');
 app.use('/api/subscription', subscriptionRoutes);
 
+const verificationRoutes = require('./routes/verification');
+app.use('/api/verification', verificationRoutes);
+
 // Test route
 app.get('/', (req, res) => {
   res.send('API is working');

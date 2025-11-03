@@ -13,7 +13,19 @@ const userSchema = new mongoose.Schema({
   showPlate: { type: Boolean, default: false },  // If true, reveal user's plate when sending messages
   email: { type: String },                       // User's email for notifications
   emailVerified: { type: Boolean, default: false }, // Email verification status
+  emailVerifiedAt: { type: Date },               // When email was verified
   notificationPreference: { type: String, enum: ['email', 'none'], default: 'email' }, // How user wants to receive notifications
+
+  // 🚧 FUTURE: SMS Verification (Tier 2)
+  // phoneNumber: { type: String },              // Phone number for SMS verification
+  // phoneVerified: { type: Boolean, default: false }, // Phone verification status
+  // phoneVerifiedAt: { type: Date },            // When phone was verified
+
+  // 🚧 FUTURE: KYC Verification (Tier 3)
+  // kycStatus: { type: String, enum: ['pending', 'approved', 'rejected', 'none'], default: 'none' },
+  // kycProvider: { type: String },              // External KYC provider name
+  // kycVerifiedAt: { type: Date },              // When KYC was completed
+  // kycDocumentType: { type: String },          // Type of document submitted (never store actual document)
 
   // Stripe/Subscription fields
   stripeCustomerId: { type: String },            // Stripe customer ID

@@ -7,6 +7,11 @@ const { plateClaimLimiter, generalApiLimiter } = require('../middleware/rateLimi
 const { validatePlateClaimRequest } = require('../middleware/validation');
 const { asyncHandler, NotFoundError, ConflictError, AuthorizationError, ValidationError } = require('../middleware/errorHandler');
 const { sendWelcomeEmail } = require('../services/emailService');
+const { createVerificationCode } = require('../services/verificationService');
+
+// 🔧 FEATURE FLAG: Require email verification for plate claiming
+// Set to 'true' to require users to verify email before claiming plates
+const REQUIRE_EMAIL_VERIFICATION = process.env.REQUIRE_EMAIL_VERIFICATION === 'true';
 
 // GET /api/plates
 router.get('/', asyncHandler(async (req, res) => {
@@ -41,7 +46,7 @@ router.post('/claim', plateClaimLimiter, validatePlateClaimRequest, asyncHandler
   }
 
   // Update or create user with email for notifications
-  await User.findOneAndUpdate(
+  const user = await User.findOneAndUpdate(
     { userId: ownerId },
     {
       $set: {
@@ -59,10 +64,15 @@ router.post('/claim', plateClaimLimiter, validatePlateClaimRequest, asyncHandler
     { upsert: true, new: true }
   );
 
-  // Send welcome email (async, don't wait for it)
-  sendWelcomeEmail({ email, plate }).catch(err =>
-    console.error('Failed to send welcome email:', err)
-  );
+  // Send verification code email (instead of welcome email)
+  // This automatically sends a code and allows user to verify
+  try {
+    await createVerificationCode(email, ownerId, 'plate_claim');
+    console.log(`📧 Verification code sent to ${email} for plate ${plate}`);
+  } catch (err) {
+    console.error('Failed to send verification code:', err);
+    // Don't fail the claim if email fails - user can still verify later
+  }
 
   // Count unread messages that were waiting for this plate
   const unreadCount = await Message.countDocuments({
@@ -73,7 +83,10 @@ router.post('/claim', plateClaimLimiter, validatePlateClaimRequest, asyncHandler
   res.json({
     success: true,
     unreadCount,
-    message: unreadCount > 0 ? `You have ${unreadCount} message${unreadCount > 1 ? 's' : ''} waiting!` : null
+    message: unreadCount > 0 ? `You have ${unreadCount} message${unreadCount > 1 ? 's' : ''} waiting!` : null,
+    emailVerified: user.emailVerified,
+    verificationRequired: !user.emailVerified,
+    verificationMessage: !user.emailVerified ? 'Please check your email to verify your address and receive notifications.' : null
   });
 }));
 
