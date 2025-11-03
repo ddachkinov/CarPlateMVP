@@ -14,7 +14,24 @@ const userSchema = new mongoose.Schema({
   email: { type: String },                       // User's email for notifications
   emailVerified: { type: Boolean, default: false }, // Email verification status
   emailVerifiedAt: { type: Date },               // When email was verified
-  notificationPreference: { type: String, enum: ['email', 'none'], default: 'email' }, // How user wants to receive notifications
+
+  // Push Notification Settings
+  pushSubscriptions: [                           // Array of push notification subscriptions (one per device/browser)
+    {
+      endpoint: { type: String, required: true },
+      keys: {
+        p256dh: { type: String, required: true },
+        auth: { type: String, required: true }
+      },
+      userAgent: { type: String },               // Browser/device identifier
+      subscribedAt: { type: Date, default: Date.now }
+    }
+  ],
+  notificationPreferences: {
+    push: { type: Boolean, default: true },      // Enable browser push notifications
+    email: { type: Boolean, default: true },     // Enable email notifications
+    emailDelay: { type: Number, default: 30 }    // Minutes to wait before sending email fallback (0 = disabled)
+  },
 
   // 🚧 FUTURE: SMS Verification (Tier 2)
   // phoneNumber: { type: String },              // Phone number for SMS verification

@@ -3,6 +3,7 @@ import { claimPlate, getUserTrustScore, getSubscriptionStatus, createCheckoutSes
 import { toast } from 'react-toastify';
 import LoadingSpinner from './LoadingSpinner';
 import EmailVerification from './EmailVerification';
+import NotificationPermission from './NotificationPermission';
 
 // ⚠️ MVP MOCK - Check if mock premium is enabled
 const MOCK_PREMIUM_ENABLED = process.env.REACT_APP_MOCK_PREMIUM === 'true';
@@ -291,6 +292,13 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned, onPremiumChanged }) =>
               {trustData.email}
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Push Notification Permission - Only show if user has owned plates */}
+      {ownedPlates.length > 0 && (
+        <div style={{ marginTop: '1rem' }}>
+          <NotificationPermission userId={userId} />
         </div>
       )}
 

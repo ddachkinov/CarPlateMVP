@@ -7,9 +7,6 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 const PricingPage = ({ userId, userEmail, isPremium }) => {
   const [loading, setLoading] = useState(false);
 
-  // Debug logging to see prop updates
-  console.log('🔍 PricingPage render - isPremium:', isPremium, 'userEmail:', userEmail);
-
   const handleUpgrade = async () => {
     if (!userEmail) {
       toast.error('Please add your email in your profile first');

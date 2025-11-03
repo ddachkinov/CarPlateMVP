@@ -6,7 +6,7 @@ const User = require('../models/User');
  */
 const checkUserBlocked = async (req, res, next) => {
   try {
-    const userId = req.body.senderId || req.body.userId || req.query.userId || req.params.userId;
+    const userId = req.body.senderId || req.body.userId || req.body.reporterId || req.query.userId || req.params.userId;
 
     if (!userId) {
       return res.status(400).json({ error: 'User ID is required' });

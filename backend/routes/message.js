@@ -10,6 +10,7 @@ const { asyncHandler } = require('../middleware/errorHandler');
 const { sendMessageNotificationEmail } = require('../services/emailService');
 const { checkUserBlocked } = require('../middleware/blockCheck');
 const { moderateAndAct } = require('../services/moderationService');
+const { sendPushToUser, createMessageNotification } = require('../services/pushService');
 
 // Apply rate limiting, validation, and block check middleware
 router.post('/', messageRateLimiter, validateMessageRequest, checkUserBlocked, asyncHandler(async (req, res) => {
@@ -87,23 +88,57 @@ router.post('/', messageRateLimiter, validateMessageRequest, checkUserBlocked, a
 
   console.log('🔍 Checking if plate is claimed:', { plate, ownerId: existing?.ownerId });
 
-  // If plate is claimed, send email notification to owner
+  // If plate is claimed, send notifications to owner
   if (existing && existing.ownerId) {
     const owner = await User.findOne({ userId: existing.ownerId });
 
-    console.log('👤 Found owner:', { userId: owner?.userId, email: owner?.email, notificationPreference: owner?.notificationPreference });
+    console.log('👤 Found owner:', { userId: owner?.userId, email: owner?.email, pushSubscriptions: owner?.pushSubscriptions?.length || 0 });
 
-    if (owner && owner.email) {
-      // Send email notification (async, don't wait for it)
-      console.log('📧 Sending notification email to:', owner.email);
-      sendMessageNotificationEmail({
-        email: owner.email,
-        plate,
-        message,
-        senderInfo: senderId
-      }).catch(err => console.error('Failed to send notification email:', err));
+    if (owner) {
+      // 1. Send push notification (if user has subscriptions and preference enabled)
+      if (owner.pushSubscriptions && owner.pushSubscriptions.length > 0 && owner.notificationPreferences?.push !== false) {
+        console.log(`📱 Sending push notification to ${owner.pushSubscriptions.length} device(s)`);
+
+        const notificationPayload = createMessageNotification(newMessage, plate);
+        const pushResult = await sendPushToUser(owner.pushSubscriptions, notificationPayload);
+
+        console.log(`📱 Push notification results: sent=${pushResult.sent}, failed=${pushResult.failed}, expired=${pushResult.expired.length}`);
+
+        // Remove expired subscriptions
+        if (pushResult.expired.length > 0) {
+          await User.updateOne(
+            { userId: owner.userId },
+            {
+              $pull: {
+                pushSubscriptions: { endpoint: { $in: pushResult.expired } }
+              }
+            }
+          );
+          console.log(`🗑️  Removed ${pushResult.expired.length} expired push subscription(s)`);
+        }
+
+        // Mark message as push sent if at least one succeeded
+        if (pushResult.sent > 0) {
+          await Message.updateOne({ _id: newMessage._id }, { pushSent: true });
+        }
+      } else {
+        console.log('⚠️ Owner has no push subscriptions or push notifications disabled');
+      }
+
+      // 2. Send email notification (if user has email and preference enabled)
+      if (owner.email && owner.notificationPreferences?.email !== false) {
+        console.log('📧 Sending notification email to:', owner.email);
+        sendMessageNotificationEmail({
+          email: owner.email,
+          plate,
+          message,
+          senderInfo: senderId
+        }).catch(err => console.error('Failed to send notification email:', err));
+      } else {
+        console.log('⚠️ Owner has no email or email notifications disabled');
+      }
     } else {
-      console.log('⚠️ Owner has no email or notification preference not set');
+      console.log('⚠️ Owner not found in database');
     }
   } else {
     console.log('⚠️ Plate not claimed, no notification sent');

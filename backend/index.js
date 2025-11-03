@@ -70,6 +70,9 @@ app.use('/api/subscription', subscriptionRoutes);
 const verificationRoutes = require('./routes/verification');
 app.use('/api/verification', verificationRoutes);
 
+const notificationRoutes = require('./routes/notifications');
+app.use('/api/notifications', notificationRoutes);
+
 // Test route
 app.get('/', (req, res) => {
   res.send('API is working');

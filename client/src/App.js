@@ -87,10 +87,8 @@ useEffect(() => {
         getSubscriptionStatus(userId),
         getUserTrustScore(userId)
       ]);
-      console.log('🔍 loadPremiumStatus - subRes:', subRes.data, 'trustRes:', trustRes.data);
       setIsPremium(subRes.data.premium || false);
       setUserEmail(trustRes.data.email || '');
-      console.log('🔍 Setting isPremium to:', subRes.data.premium || false);
     } catch (err) {
       console.error('❌ Failed to load premium status:', err.message);
     }
@@ -117,16 +115,19 @@ useEffect(() => {
       return;
     }
 
+    if (!userId) {
+      toast.error('User ID not found. Please refresh the page.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const senderId = localStorage.getItem('userId') || 'guest';
-
       console.log('Registering plate:', plate);
-      console.log('Sending message:', { plate, message, senderId });
+      console.log('Sending message:', { plate, message, senderId: userId });
       await sendMessage({
         plate: plate.trim(),
         message: message.trim(),
-        senderId
+        senderId: userId
       });
 
       console.log('✅ Message sent successfully!');

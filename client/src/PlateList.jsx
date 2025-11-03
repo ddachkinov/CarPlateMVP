@@ -17,7 +17,7 @@ const normalizePlate = (plate) => plate.trim().toUpperCase();
 
 const PlateList = ({ plates, messages }) => {
   const [reportedMessages, setReportedMessages] = useState(new Set());
-  const userId = localStorage.getItem('userId') || 'guest';
+  const userId = localStorage.getItem('userId');
 
   useEffect(() => {
     // Load reported messages from localStorage
@@ -29,6 +29,12 @@ const PlateList = ({ plates, messages }) => {
 
   const handleReport = async (messageId, senderId, reason = 'Inappropriate content') => {
     if (!messageId || reportedMessages.has(messageId)) return;
+
+    // Check if user is logged in (has registered userId)
+    if (!userId) {
+      toast.error('You must be a registered user to report messages. Please claim a plate first.');
+      return;
+    }
 
     try {
       const response = await reportMessage({
