@@ -8,6 +8,7 @@ import ProfilePage from './ProfilePage';
 import AdminDashboard from './AdminDashboard';
 import PricingPage from './PricingPage';
 import LoadingSpinner from './LoadingSpinner';
+import FeedbackButton from './FeedbackButton';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -311,6 +312,9 @@ useEffect(() => {
           {view === 'admin' && <AdminDashboard />}
         </>
       )}
+
+      {/* Floating Feedback Button - appears on all pages */}
+      <FeedbackButton userId={userId} />
     </div>
   );
 }

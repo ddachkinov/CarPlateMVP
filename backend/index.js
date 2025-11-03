@@ -73,6 +73,9 @@ app.use('/api/verification', verificationRoutes);
 const notificationRoutes = require('./routes/notifications');
 app.use('/api/notifications', notificationRoutes);
 
+const feedbackRoutes = require('./routes/feedback');
+app.use('/api/feedback', feedbackRoutes);
+
 // Test route
 app.get('/', (req, res) => {
   res.send('API is working');
