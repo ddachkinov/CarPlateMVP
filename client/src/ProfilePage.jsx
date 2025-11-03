@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { claimPlate, getUserTrustScore, getSubscriptionStatus, createCheckoutSession, createPortalSession, mockTogglePremium } from './api/plates';
 import { toast } from 'react-toastify';
 import LoadingSpinner from './LoadingSpinner';
+import EmailVerification from './EmailVerification';
 
 // ⚠️ MVP MOCK - Check if mock premium is enabled
 const MOCK_PREMIUM_ENABLED = process.env.REACT_APP_MOCK_PREMIUM === 'true';
@@ -13,17 +14,17 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
   const [subscriptionData, setSubscriptionData] = useState(null);
   const [loadingSubscription, setLoadingSubscription] = useState(false);
 
-  useEffect(() => {
-    // Fetch user's trust score
-    const fetchTrustScore = async () => {
-      try {
-        const response = await getUserTrustScore(userId);
-        setTrustData(response.data);
-      } catch (err) {
-        console.error('Failed to fetch trust score:', err);
-      }
-    };
+  // Fetch trust score function (exposed for refresh after verification)
+  const fetchTrustScore = async () => {
+    try {
+      const response = await getUserTrustScore(userId);
+      setTrustData(response.data);
+    } catch (err) {
+      console.error('Failed to fetch trust score:', err);
+    }
+  };
 
+  useEffect(() => {
     // Fetch subscription status
     const fetchSubscription = async () => {
       try {
@@ -63,7 +64,7 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
         ownerId: userId,
         email: email.trim().toLowerCase()
       });
-      const { unreadCount, message } = response.data;
+      const { unreadCount, message, verificationRequired, verificationMessage } = response.data;
 
       if (unreadCount > 0) {
         toast.success(`Plate claimed! 🎉 ${message}`, { autoClose: 5000 });
@@ -71,9 +72,15 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
         toast.success('Plate claimed! You\'ll receive email notifications when someone sends you a message.', { autoClose: 5000 });
       }
 
+      // Show verification prompt if needed
+      if (verificationRequired && verificationMessage) {
+        toast.info(verificationMessage, { autoClose: 10000 });
+      }
+
       setNewPlate('');
       setEmail('');
       refreshOwned();
+      fetchTrustScore(); // Refresh to show verification status
     } catch (err) {
       if (err.response?.status === 409) {
         toast.error('This plate is already claimed by another user');
@@ -230,6 +237,55 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
           <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', marginBottom: 0 }}>
             Your trust score affects your ability to send messages. Report violations to keep the community safe.
           </p>
+        </div>
+      )}
+
+      {/* Email Verification Status */}
+      {trustData && trustData.email && !trustData.emailVerified && (
+        <div style={{
+          marginTop: '1rem',
+          padding: '1rem',
+          backgroundColor: '#fff3cd',
+          borderRadius: '8px',
+          borderLeft: '4px solid #ffc107'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <span style={{ fontSize: '1.25rem' }}>⚠️</span>
+            <strong style={{ fontSize: '1rem' }}>Email Not Verified</strong>
+          </div>
+          <p style={{ fontSize: '0.875rem', color: '#856404', marginBottom: '0.75rem' }}>
+            Please verify your email address to receive notifications for messages sent to your claimed plates.
+          </p>
+          <EmailVerification
+            userId={userId}
+            email={trustData.email}
+            onVerified={() => {
+              toast.success('✅ Email verified successfully!');
+              fetchTrustScore(); // Refresh to show verified status
+            }}
+          />
+        </div>
+      )}
+
+      {/* Email Verified Badge */}
+      {trustData && trustData.email && trustData.emailVerified && (
+        <div style={{
+          marginTop: '1rem',
+          padding: '0.75rem 1rem',
+          backgroundColor: '#d4edda',
+          borderRadius: '8px',
+          borderLeft: '4px solid #28a745',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem'
+        }}>
+          <span style={{ fontSize: '1.25rem' }}>✅</span>
+          <div>
+            <strong style={{ color: '#155724' }}>Email Verified</strong>
+            <p style={{ fontSize: '0.875rem', color: '#155724', margin: '0.25rem 0 0 0' }}>
+              {trustData.email}
+            </p>
+          </div>
         </div>
       )}
 

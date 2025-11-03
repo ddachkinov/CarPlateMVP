@@ -24,6 +24,12 @@ export const createPortalSession = (data) => API.post('/subscription/create-port
 // ⚠️ MVP MOCK - REMOVE WHEN STRIPE IS CONFIGURED
 export const mockTogglePremium = (userId) => API.post('/subscription/mock-toggle-premium', { userId });
 
+// Verification & Email
+export const sendVerificationCode = (data) => API.post('/verification/send-code', data);
+export const verifyEmailCode = (data) => API.post('/verification/verify-code', data);
+export const resendVerificationCode = (data) => API.post('/verification/resend-code', data);
+export const getVerificationStatus = (userId) => API.get(`/verification/status/${userId}`);
+
 
 // 🛠️ Future enhancement (not in MVP):
 // When claiming a plate, we'll instead POST a verification request with:
