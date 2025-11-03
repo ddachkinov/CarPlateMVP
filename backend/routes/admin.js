@@ -140,7 +140,19 @@ router.get('/users', checkAdminAuth, asyncHandler(async (req, res) => {
     .sort({ createdAt: -1 })
     .limit(100);
 
-  res.json(users);
+  // Fetch owned plates for each user
+  const Plate = require('../models/Plate');
+  const usersWithPlates = await Promise.all(
+    users.map(async (user) => {
+      const ownedPlates = await Plate.find({ ownerId: user.userId });
+      return {
+        ...user.toObject(),
+        ownedPlates: ownedPlates.map(p => p.plate)
+      };
+    })
+  );
+
+  res.json(usersWithPlates);
 }));
 
 /**

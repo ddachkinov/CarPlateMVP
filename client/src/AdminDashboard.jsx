@@ -399,12 +399,30 @@ const UserCard = ({ user, onToggleBlock }) => {
         <div>
           <strong>{user.userId}</strong>
           {user.nickname && <span> ({user.nickname})</span>}
+          {user.premium && (
+            <span style={{
+              marginLeft: '0.5rem',
+              padding: '0.125rem 0.5rem',
+              backgroundColor: '#ffc107',
+              color: '#000',
+              borderRadius: '4px',
+              fontSize: '0.75rem',
+              fontWeight: 'bold'
+            }}>
+              PREMIUM
+            </span>
+          )}
           <p style={{ margin: '0.25rem 0', fontSize: '0.875rem' }}>
             Trust Score: <strong style={{ color: getTrustScoreColor(user.trustScore) }}>
               {user.trustScore}
             </strong>
           </p>
           {user.email && <p style={{ margin: 0, fontSize: '0.875rem' }}>Email: {user.email}</p>}
+          {user.ownedPlates && user.ownedPlates.length > 0 && (
+            <p style={{ margin: '0.25rem 0', fontSize: '0.875rem' }}>
+              <strong>Plates:</strong> {user.ownedPlates.join(', ')}
+            </p>
+          )}
           {user.blocked && (
             <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: '#dc3545' }}>
               <strong>Blocked:</strong> {user.blockedReason}
