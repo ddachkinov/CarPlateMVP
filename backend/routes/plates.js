@@ -143,8 +143,9 @@ router.get('/inbox/:userId', asyncHandler(async (req, res) => {
   if (unreadMessageIds.length > 0) {
     await Message.updateMany(
       { _id: { $in: unreadMessageIds } },
-      { $set: { isRead: true } }
+      { $set: { isRead: true, readAt: new Date() } }
     );
+    console.log(`📖 Marked ${unreadMessageIds.length} message(s) as read for user ${userId}`);
   }
 
   res.json(messages);
