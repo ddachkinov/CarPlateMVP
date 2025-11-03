@@ -7,7 +7,7 @@ import EmailVerification from './EmailVerification';
 // ⚠️ MVP MOCK - Check if mock premium is enabled
 const MOCK_PREMIUM_ENABLED = process.env.REACT_APP_MOCK_PREMIUM === 'true';
 
-const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
+const ProfilePage = ({ userId, ownedPlates, refreshOwned, onPremiumChanged }) => {
   const [newPlate, setNewPlate] = useState('');
   const [email, setEmail] = useState('');
   const [trustData, setTrustData] = useState(null);
@@ -168,6 +168,11 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned }) => {
       // Refresh subscription data
       const updatedSub = await getSubscriptionStatus(userId);
       setSubscriptionData(updatedSub.data);
+
+      // Notify parent (App.js) to refresh premium status globally
+      if (onPremiumChanged) {
+        onPremiumChanged();
+      }
     } catch (err) {
       console.error('Failed to toggle premium:', err);
       toast.error('Failed to toggle premium status');

@@ -299,6 +299,7 @@ useEffect(() => {
               ownedPlates={ownedPlates}
               refreshOwned={loadOwnedPlates}
               onPlateChanged={handlePlateChanged}
+              onPremiumChanged={loadPremiumStatus}
             />
           )}
 
