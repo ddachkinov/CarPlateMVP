@@ -18,6 +18,21 @@ router.post('/', asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'Message must be between 5 and 1000 characters' });
   }
 
+  // Rate limiting: Check how many feedback submissions in the last 24 hours
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const recentFeedbackCount = await Feedback.countDocuments({
+    userId,
+    createdAt: { $gte: twentyFourHoursAgo }
+  });
+
+  if (recentFeedbackCount >= 5) {
+    console.log(`🚫 Rate limit exceeded for user ${userId}: ${recentFeedbackCount} submissions in 24h`);
+    return res.status(429).json({
+      error: 'Rate limit exceeded. You can submit up to 5 feedback items per day.',
+      retryAfter: '24 hours'
+    });
+  }
+
   const feedback = new Feedback({
     userId,
     email: email || null,
@@ -28,7 +43,7 @@ router.post('/', asyncHandler(async (req, res) => {
 
   await feedback.save();
 
-  console.log(`💬 Feedback submitted by ${userId}: ${type || 'other'}`);
+  console.log(`💬 Feedback submitted by ${userId}: ${type || 'other'} (${recentFeedbackCount + 1}/5 today)`);
 
   res.status(201).json({
     success: true,

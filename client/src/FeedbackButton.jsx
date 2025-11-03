@@ -10,9 +10,17 @@ const FeedbackButton = ({ userId }) => {
   const [message, setMessage] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [honeypot, setHoneypot] = useState(''); // Anti-spam honeypot
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Honeypot check - if filled, it's likely a bot
+    if (honeypot) {
+      console.log('Spam detected via honeypot');
+      setIsOpen(false);
+      return;
+    }
 
     if (message.trim().length < 5) {
       toast.error('Please provide at least 5 characters of feedback');
@@ -133,21 +141,20 @@ const FeedbackButton = ({ userId }) => {
                 Help us improve! Share your ideas, report bugs, or suggest improvements.
               </p>
 
-              <form onSubmit={handleSubmit}>
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
                 {/* Feedback Type */}
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '600', fontSize: '0.95rem', color: '#333' }}>
+                <div style={{ marginBottom: '1.75rem', display: 'flex', flexDirection: 'column' }}>
+                  <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '600', fontSize: '1rem', color: '#333' }}>
                     Type
                   </label>
                   <select
                     value={type}
                     onChange={(e) => setType(e.target.value)}
                     style={{
-                      width: '100%',
-                      padding: '0.875rem',
+                      padding: '1rem',
                       border: '1.5px solid #ddd',
                       borderRadius: '8px',
-                      fontSize: '0.95rem',
+                      fontSize: '1rem',
                       backgroundColor: '#fafafa',
                       cursor: 'pointer',
                       transition: 'border-color 0.2s',
@@ -164,8 +171,8 @@ const FeedbackButton = ({ userId }) => {
                 </div>
 
                 {/* Message */}
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '600', fontSize: '0.95rem', color: '#333' }}>
+                <div style={{ marginBottom: '1.75rem', display: 'flex', flexDirection: 'column' }}>
+                  <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '600', fontSize: '1rem', color: '#333' }}>
                     Message <span style={{ color: '#dc3545' }}>*</span>
                   </label>
                   <textarea
@@ -175,12 +182,11 @@ const FeedbackButton = ({ userId }) => {
                     required
                     maxLength={1000}
                     style={{
-                      width: '100%',
-                      padding: '0.875rem',
+                      padding: '1rem',
                       border: '1.5px solid #ddd',
                       borderRadius: '8px',
-                      fontSize: '0.95rem',
-                      minHeight: '140px',
+                      fontSize: '1rem',
+                      minHeight: '150px',
                       resize: 'vertical',
                       fontFamily: 'inherit',
                       lineHeight: '1.6',
@@ -191,15 +197,15 @@ const FeedbackButton = ({ userId }) => {
                     onFocus={(e) => e.target.style.borderColor = '#007bff'}
                     onBlur={(e) => e.target.style.borderColor = '#ddd'}
                   />
-                  <div style={{ textAlign: 'right', fontSize: '0.8rem', color: '#999', marginTop: '0.5rem' }}>
+                  <div style={{ textAlign: 'right', fontSize: '0.85rem', color: '#999', marginTop: '0.5rem' }}>
                     {message.length}/1000 characters
                   </div>
                 </div>
 
                 {/* Optional Email */}
-                <div style={{ marginBottom: '2rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '600', fontSize: '0.95rem', color: '#333' }}>
-                    Email <span style={{ fontSize: '0.85rem', fontWeight: 'normal', color: '#666' }}>(optional)</span>
+                <div style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column' }}>
+                  <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '600', fontSize: '1rem', color: '#333' }}>
+                    Email <span style={{ fontSize: '0.9rem', fontWeight: 'normal', color: '#666' }}>(optional)</span>
                   </label>
                   <input
                     type="email"
@@ -207,11 +213,10 @@ const FeedbackButton = ({ userId }) => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="your@email.com"
                     style={{
-                      width: '100%',
-                      padding: '0.875rem',
+                      padding: '1rem',
                       border: '1.5px solid #ddd',
                       borderRadius: '8px',
-                      fontSize: '0.95rem',
+                      fontSize: '1rem',
                       backgroundColor: '#fafafa',
                       transition: 'border-color 0.2s',
                       boxSizing: 'border-box'
@@ -219,10 +224,22 @@ const FeedbackButton = ({ userId }) => {
                     onFocus={(e) => e.target.style.borderColor = '#007bff'}
                     onBlur={(e) => e.target.style.borderColor = '#ddd'}
                   />
-                  <div style={{ fontSize: '0.75rem', color: '#999', marginTop: '0.25rem' }}>
+                  <div style={{ fontSize: '0.85rem', color: '#999', marginTop: '0.5rem' }}>
                     We'll only use this to respond to your feedback
                   </div>
                 </div>
+
+                {/* Honeypot field - hidden from users, bots will fill it */}
+                <input
+                  type="text"
+                  name="website"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                  style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px' }}
+                  tabIndex="-1"
+                  autoComplete="off"
+                  aria-hidden="true"
+                />
 
                 {/* Submit Buttons */}
                 <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
