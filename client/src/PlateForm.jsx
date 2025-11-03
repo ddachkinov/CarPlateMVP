@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading, isGuest, onUpgradeClick }) => {
+const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading, isGuest, isPremium, onUpgradeClick }) => {
   const [loadingOCR, setLoadingOCR] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
@@ -94,7 +94,7 @@ const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading
         </p>
       )}
 
-{isGuest ? (
+{!isPremium ? (
   <>
     <select
       value={message}
@@ -116,7 +116,7 @@ const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading
 
     <textarea
       readOnly
-      placeholder="Only registered users can send custom messages"
+      placeholder="⭐ Upgrade to Premium to send custom messages"
       value=""
       onFocus={() => setShowWarning(true)}
       style={{

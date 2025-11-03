@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { sendMessage, getOwnedPlates } from './api/plates';
+import { sendMessage, getOwnedPlates, getUserMessages, getSubscriptionStatus, getUserTrustScore } from './api/plates';
 import PlateForm from './PlateForm';
 import PlateList from './PlateList';
 import './App.css';
-import { getUserMessages } from './api/plates';
 import LoginPage from './LoginPage';
 import ProfilePage from './ProfilePage';
 import AdminDashboard from './AdminDashboard';
@@ -20,6 +19,8 @@ function App() {
   const [ownedPlates, setOwnedPlates] = useState([]);
   const [inbox, setInbox] = useState([]);
   const [userId, setUserId] = useState(localStorage.getItem('userId') || '');
+  const [isPremium, setIsPremium] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
 
 useEffect(() => {
   // ensure userId exists and is registered
@@ -78,10 +79,26 @@ useEffect(() => {
     }
   };
 
+  const loadPremiumStatus = async () => {
+    const userId = localStorage.getItem('userId');
+    if (!userId) return;
+    try {
+      const [subRes, trustRes] = await Promise.all([
+        getSubscriptionStatus(userId),
+        getUserTrustScore(userId)
+      ]);
+      setIsPremium(subRes.data.premium || false);
+      setUserEmail(trustRes.data.email || '');
+    } catch (err) {
+      console.error('❌ Failed to load premium status:', err.message);
+    }
+  };
+
   useEffect(() => {
     loadPlates();
     loadInbox();
     loadOwnedPlates();
+    loadPremiumStatus();
   }, []);
 
   // 🔧 NEW: call after claim/unclaim (from ProfilePage) to refresh data and go to Inbox
@@ -265,6 +282,7 @@ useEffect(() => {
           handleSubmit={handleSubmit}
           loading={loading}
           isGuest={!ownedPlates.length}
+          isPremium={isPremium}
           onUpgradeClick={() => setView('premium')}
         />
       )}
@@ -284,7 +302,7 @@ useEffect(() => {
             />
           )}
 
-          {view === 'premium' && <PricingPage userId={userId} />}
+          {view === 'premium' && <PricingPage userId={userId} userEmail={userEmail} isPremium={isPremium} />}
 
           {view === 'admin' && <AdminDashboard />}
         </>
