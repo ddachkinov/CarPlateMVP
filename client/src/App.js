@@ -87,8 +87,10 @@ useEffect(() => {
         getSubscriptionStatus(userId),
         getUserTrustScore(userId)
       ]);
+      console.log('🔍 loadPremiumStatus - subRes:', subRes.data, 'trustRes:', trustRes.data);
       setIsPremium(subRes.data.premium || false);
       setUserEmail(trustRes.data.email || '');
+      console.log('🔍 Setting isPremium to:', subRes.data.premium || false);
     } catch (err) {
       console.error('❌ Failed to load premium status:', err.message);
     }

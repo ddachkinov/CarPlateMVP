@@ -7,6 +7,9 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 const PricingPage = ({ userId, userEmail, isPremium }) => {
   const [loading, setLoading] = useState(false);
 
+  // Debug logging to see prop updates
+  console.log('🔍 PricingPage render - isPremium:', isPremium, 'userEmail:', userEmail);
+
   const handleUpgrade = async () => {
     if (!userEmail) {
       toast.error('Please add your email in your profile first');
@@ -38,6 +41,81 @@ const PricingPage = ({ userId, userEmail, isPremium }) => {
       toast.error('Failed to start checkout. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/subscription/create-portal-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Redirect to Stripe Customer Portal
+        window.location.href = data.url;
+      } else {
+        toast.error(data.error || 'Failed to open subscription management');
+      }
+    } catch (error) {
+      console.error('Error creating portal session:', error);
+      toast.error('Failed to open subscription management. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDowngrade = async () => {
+    // Confirmation dialog
+    const confirmed = window.confirm(
+      'Are you sure you want to downgrade to the Free plan?\n\n' +
+      'You will lose access to:\n' +
+      '• Custom messages\n' +
+      '• Premium supporter badge\n' +
+      '• Priority email support\n\n' +
+      'Your claimed plates and message history will be preserved.'
+    );
+
+    if (!confirmed) return;
+
+    // Check if in mock mode
+    const isMockMode = process.env.REACT_APP_MOCK_PREMIUM === 'true';
+
+    if (isMockMode) {
+      // Mock mode: directly toggle premium status
+      setLoading(true);
+      try {
+        const response = await fetch(`${API_URL}/subscription/mock-toggle-premium`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          toast.success('Downgraded to Free plan');
+          // Reload the page to refresh all premium status
+          window.location.reload();
+        } else {
+          toast.error(data.error || 'Failed to downgrade');
+        }
+      } catch (error) {
+        console.error('Error downgrading:', error);
+        toast.error('Failed to downgrade. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // Production mode: Open Stripe portal for cancellation
+      handleManageSubscription();
     }
   };
 
@@ -74,8 +152,9 @@ const PricingPage = ({ userId, userEmail, isPremium }) => {
             'No custom messages',
             'Standard support'
           ]}
-          buttonText={isPremium ? 'Current Plan' : 'Current Plan'}
-          buttonDisabled={true}
+          buttonText={!isPremium ? 'Current Plan' : 'Downgrade to Free'}
+          buttonAction={isPremium ? handleDowngrade : null}
+          buttonDisabled={!isPremium}
           current={!isPremium}
         />
 
@@ -94,7 +173,7 @@ const PricingPage = ({ userId, userEmail, isPremium }) => {
           ]}
           limitations={[]}
           buttonText={isPremium ? 'Manage Subscription' : 'Upgrade to Premium'}
-          buttonAction={isPremium ? null : handleUpgrade}
+          buttonAction={isPremium ? handleManageSubscription : handleUpgrade}
           highlighted={true}
           current={isPremium}
         />
