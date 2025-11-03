@@ -134,6 +134,8 @@ router.get('/user/:userId', asyncHandler(async (req, res) => {
     blockedReason: user.blockedReason,
     blockedAt: user.blockedAt,
     email,
+    emailVerified: user.emailVerified,
+    emailVerifiedAt: user.emailVerifiedAt,
     registered: true
   });
 }));

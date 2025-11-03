@@ -24,8 +24,8 @@ const EmailVerification = ({ userId, email, onVerified }) => {
     setLoading(true);
     try {
       await verifyEmailCode({ email, code, userId });
-      toast.success('✅ Email verified successfully!');
       setCode('');
+      // Let the parent component (ProfilePage) handle the success toast
       if (onVerified) {
         onVerified();
       }
