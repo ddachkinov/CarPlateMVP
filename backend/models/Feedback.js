@@ -20,4 +20,8 @@ const FeedbackSchema = new mongoose.Schema({
   reviewedBy: { type: String } // Admin userId who reviewed it
 });
 
+// Indexes for query optimization
+FeedbackSchema.index({ userId: 1, createdAt: -1 }); // For rate limiting queries (count submissions in time window)
+FeedbackSchema.index({ status: 1, createdAt: -1 }); // For admin filtering by status
+
 module.exports = mongoose.model('Feedback', FeedbackSchema);

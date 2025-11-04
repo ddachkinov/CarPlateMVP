@@ -11,4 +11,9 @@ const MessageSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+// Indexes for query optimization
+MessageSchema.index({ plate: 1, createdAt: -1 }); // For inbox queries (get messages for a plate, sorted by date)
+MessageSchema.index({ senderId: 1 }); // For finding messages by sender
+MessageSchema.index({ isRead: 1, createdAt: -1 }); // For filtering unread messages
+
 module.exports = mongoose.model('Message', MessageSchema);

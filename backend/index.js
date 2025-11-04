@@ -1,6 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
 require('dotenv').config();
 
 const {
@@ -14,13 +16,29 @@ const {
 process.on('uncaughtException', handleUncaughtException);
 
 const app = express(); // <--- APP MUST BE CREATED FIRST
+
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: false, // Allow inline scripts for React
+  crossOriginEmbedderPolicy: false // Allow cross-origin resources
+}));
 app.use(cors());
 
 // Stripe webhook needs raw body, must come BEFORE express.json()
 app.use('/api/subscription/webhook', express.raw({ type: 'application/json' }));
 
-// JSON body parser for all other routes
-app.use(express.json());
+// JSON body parser for all other routes with size limit
+app.use(express.json({ limit: '10mb' }));
+
+// Note: NoSQL injection protection is handled by input validation middleware in routes
+// express-mongo-sanitize is not compatible with Express 5.x
+
+// HTTP request logging
+if (process.env.NODE_ENV === 'production') {
+  app.use(morgan('combined')); // Detailed logs in production
+} else {
+  app.use(morgan('dev')); // Colored, concise logs in development
+}
 
 // MongoDB connection with error handling
 mongoose.connect(process.env.MONGO_URI, {

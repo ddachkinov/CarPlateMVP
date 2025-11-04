@@ -55,5 +55,10 @@ const userSchema = new mongoose.Schema({
   subscriptionEndDate: { type: Date }            // When subscription ends/renews
 });
 
+// Indexes for query optimization
+userSchema.index({ email: 1 }); // For email lookups
+userSchema.index({ blocked: 1 }); // For filtering blocked users
+userSchema.index({ stripeCustomerId: 1 }); // For Stripe webhook lookups
+
 module.exports = mongoose.model('User', userSchema);
 

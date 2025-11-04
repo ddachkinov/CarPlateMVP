@@ -73,8 +73,16 @@ router.post('/', messageRateLimiter, validateMessageRequest, checkUserBlocked, a
     console.log(`⚠️  Message flagged for review: ${senderId} - ${modResult.reason}`);
   }
 
-  // Create plate if it doesn't exist
+  // Check if user is trying to message their own plate
   let existing = await Plate.findOne({ plate });
+  if (existing && existing.ownerId === senderId) {
+    console.log(`🚫 User ${senderId} attempted to message their own plate ${plate}`);
+    return res.status(400).json({
+      error: 'You cannot send messages to your own plate'
+    });
+  }
+
+  // Create plate if it doesn't exist
   if (!existing) {
     await Plate.create({ plate }); // Create without ownerId
   }
