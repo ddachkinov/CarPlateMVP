@@ -1,93 +1,81 @@
 /* eslint-disable no-restricted-globals */
-// Service Worker for Push Notifications
 
-// Listen for push notifications
-self.addEventListener('push', function(event) {
-  console.log('[Service Worker] Push received:', event);
+// Service Worker for CarPlate PWA
+// Provides offline functionality and caching for better mobile experience
 
-  let notificationData = {
-    title: 'New Message',
-    body: 'You have a new message',
-    icon: '/logo192.png',
-    badge: '/logo192.png',
-    tag: 'default',
-    data: { url: '/?tab=inbox' }
-  };
+const CACHE_NAME = 'carplate-v1';
+const urlsToCache = [
+  '/',
+  '/index.html',
+  '/static/css/main.css',
+  '/static/js/main.js',
+  '/static/js/bundle.js',
+  '/manifest.json',
+  '/favicon.ico'
+];
 
-  // Parse notification data if available
-  if (event.data) {
-    try {
-      const payload = event.data.json();
-      notificationData = {
-        title: payload.title || notificationData.title,
-        body: payload.body || notificationData.body,
-        icon: payload.icon || notificationData.icon,
-        badge: payload.badge || notificationData.badge,
-        tag: payload.tag || notificationData.tag,
-        data: payload.data || notificationData.data,
-        actions: payload.actions || []
-      };
-    } catch (error) {
-      console.error('[Service Worker] Error parsing push data:', error);
-    }
-  }
-
-  const promiseChain = self.registration.showNotification(
-    notificationData.title,
-    {
-      body: notificationData.body,
-      icon: notificationData.icon,
-      badge: notificationData.badge,
-      tag: notificationData.tag,
-      data: notificationData.data,
-      actions: notificationData.actions,
-      requireInteraction: false,
-      vibrate: [200, 100, 200]
-    }
-  );
-
-  event.waitUntil(promiseChain);
-});
-
-// Handle notification clicks
-self.addEventListener('notificationclick', function(event) {
-  console.log('[Service Worker] Notification clicked:', event);
-
-  event.notification.close();
-
-  // Handle action button clicks
-  if (event.action === 'view') {
-    event.waitUntil(
-      clients.openWindow(event.notification.data.url || '/?tab=inbox')
-    );
-  } else {
-    // Default action - open the app
-    event.waitUntil(
-      clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
-        // Check if app is already open
-        for (let i = 0; i < clientList.length; i++) {
-          const client = clientList[i];
-          if (client.url.includes(self.location.origin) && 'focus' in client) {
-            return client.focus();
-          }
-        }
-        // If not open, open new window
-        if (clients.openWindow) {
-          return clients.openWindow(event.notification.data.url || '/?tab=inbox');
-        }
+// Install event - cache assets
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('Opened cache');
+        return cache.addAll(urlsToCache);
       })
-    );
-  }
+      .catch((error) => {
+        console.error('Cache installation failed:', error);
+      })
+  );
 });
 
-// Service worker activation
-self.addEventListener('activate', function(event) {
-  console.log('[Service Worker] Activated');
-  event.waitUntil(self.clients.claim());
+// Activate event - clean up old caches
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
 });
 
-// Service worker installation
-self.addEventListener('install', function(event) {
-  console.log('[Service Worker] Installed');
-  self.skipWaiting();
+// Fetch event - serve from cache, fallback to network
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request)
+      .then((response) => {
+        // Cache hit - return response
+        if (response) {
+          return response;
+        }
+
+        return fetch(event.request).then(
+          (response) => {
+            // Check if we received a valid response
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+
+            // Clone the response
+            const responseToCache = response.clone();
+
+            caches.open(CACHE_NAME)
+              .then((cache) => {
+                cache.put(event.request, responseToCache);
+              });
+
+            return response;
+          }
+        );
+      })
+      .catch(() => {
+        // Offline fallback
+        return caches.match('/index.html');
+      })
+  );
 });
