@@ -3,7 +3,10 @@ const router = express.Router();
 const Report = require('../models/Report');
 const User = require('../models/User');
 const Message = require('../models/Message');
+const Appeal = require('../models/Appeal');
+const TrustScoreHistory = require('../models/TrustScoreHistory');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { updateTrustScore } = require('../services/trustScoreService');
 
 // Simple admin authentication middleware (use environment variable for admin key)
 const checkAdminAuth = (req, res, next) => {
@@ -58,15 +61,33 @@ router.get('/stats', checkAdminAuth, asyncHandler(async (req, res) => {
     blockedUsers,
     pendingReports,
     totalReports,
-    avgTrustScore
+    pendingAppeals,
+    totalAppeals,
+    avgTrustScore,
+    totalMessages
   ] = await Promise.all([
     User.countDocuments(),
     User.countDocuments({ blocked: true }),
     Report.countDocuments({ status: 'pending' }),
     Report.countDocuments(),
+    Appeal.countDocuments({ status: 'pending' }),
+    Appeal.countDocuments(),
     User.aggregate([
       { $group: { _id: null, avgTrust: { $avg: '$trustScore' } } }
-    ])
+    ]),
+    Message.countDocuments()
+  ]);
+
+  // Get trust score distribution
+  const trustDistribution = await User.aggregate([
+    {
+      $bucket: {
+        groupBy: '$trustScore',
+        boundaries: [0, 20, 40, 60, 80, 100, 101],
+        default: 'Other',
+        output: { count: { $sum: 1 } }
+      }
+    }
   ]);
 
   res.json({
@@ -74,7 +95,11 @@ router.get('/stats', checkAdminAuth, asyncHandler(async (req, res) => {
     blockedUsers,
     pendingReports,
     totalReports,
-    averageTrustScore: avgTrustScore[0]?.avgTrust || 100
+    pendingAppeals,
+    totalAppeals,
+    totalMessages,
+    averageTrustScore: avgTrustScore[0]?.avgTrust || 100,
+    trustDistribution
   });
 }));
 
@@ -187,6 +212,167 @@ router.patch('/users/:userId', checkAdminAuth, asyncHandler(async (req, res) => 
   await User.updateOne({ userId }, updates);
 
   res.json({ message: 'User updated successfully', updates });
+}));
+
+/**
+ * GET /api/admin/appeals
+ * Get all appeals (optionally filter by status)
+ */
+router.get('/appeals', checkAdminAuth, asyncHandler(async (req, res) => {
+  const { status } = req.query;
+
+  const filter = status ? { status } : {};
+  const appeals = await Appeal.find(filter)
+    .sort({ createdAt: -1 })
+    .limit(100);
+
+  // Populate user information
+  const appealsWithUsers = await Promise.all(
+    appeals.map(async (appeal) => {
+      const user = await User.findOne({ userId: appeal.userId });
+      return {
+        ...appeal.toObject(),
+        userTrustScore: user ? user.trustScore : null,
+        userBlocked: user ? user.blocked : null,
+        userBlockedReason: user ? user.blockedReason : null
+      };
+    })
+  );
+
+  res.json(appealsWithUsers);
+}));
+
+/**
+ * PATCH /api/admin/appeals/:appealId
+ * Review an appeal (approve/deny)
+ */
+router.patch('/appeals/:appealId', checkAdminAuth, asyncHandler(async (req, res) => {
+  const { appealId } = req.params;
+  const { status, adminResponse, trustScoreAdjustment } = req.body;
+
+  if (!status || !['approved', 'denied'].includes(status)) {
+    return res.status(400).json({ error: 'Status must be "approved" or "denied"' });
+  }
+
+  const appeal = await Appeal.findById(appealId);
+  if (!appeal) {
+    return res.status(404).json({ error: 'Appeal not found' });
+  }
+
+  if (appeal.status !== 'pending') {
+    return res.status(400).json({ error: 'Appeal has already been reviewed' });
+  }
+
+  // Update appeal
+  appeal.status = status;
+  appeal.adminResponse = adminResponse || '';
+  appeal.reviewedBy = 'admin'; // TODO: Use actual admin user ID
+  appeal.reviewedAt = new Date();
+  await appeal.save();
+
+  // If approved, unblock user and optionally adjust trust score
+  if (status === 'approved') {
+    const user = await User.findOne({ userId: appeal.userId });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Unblock the user
+    await User.updateOne(
+      { userId: appeal.userId },
+      {
+        blocked: false,
+        blockedReason: null,
+        blockedAt: null
+      }
+    );
+
+    // Adjust trust score if specified
+    if (trustScoreAdjustment && trustScoreAdjustment !== 0) {
+      await updateTrustScore(
+        appeal.userId,
+        trustScoreAdjustment,
+        'appeal_approved',
+        {
+          details: `Appeal approved by admin. ${adminResponse || 'No additional notes.'}`,
+          relatedReportId: appeal._id,
+          performedBy: 'admin'
+        }
+      );
+    }
+
+    console.log(`✅ Appeal approved for user ${appeal.userId}. User unblocked.`);
+
+    res.json({
+      message: 'Appeal approved. User has been unblocked.',
+      appeal,
+      userUnblocked: true,
+      trustScoreAdjustment: trustScoreAdjustment || 0
+    });
+  } else {
+    // Appeal denied
+    console.log(`❌ Appeal denied for user ${appeal.userId}`);
+
+    res.json({
+      message: 'Appeal denied.',
+      appeal,
+      userUnblocked: false
+    });
+  }
+}));
+
+/**
+ * GET /api/admin/users/:userId/trust-history
+ * Get trust score history for a specific user (admin view)
+ */
+router.get('/users/:userId/trust-history', checkAdminAuth, asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const limit = parseInt(req.query.limit) || 100;
+
+  const user = await User.findOne({ userId });
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  const history = await TrustScoreHistory.find({ userId })
+    .sort({ createdAt: -1 })
+    .limit(limit);
+
+  // Populate related entities for context
+  const historyWithDetails = await Promise.all(
+    history.map(async (entry) => {
+      let messageContent = null;
+      let reportReason = null;
+
+      if (entry.relatedMessageId) {
+        const message = await Message.findById(entry.relatedMessageId);
+        if (message) {
+          messageContent = message.message;
+        }
+      }
+
+      if (entry.relatedReportId) {
+        const report = await Report.findById(entry.relatedReportId);
+        if (report) {
+          reportReason = report.reason;
+        }
+      }
+
+      return {
+        ...entry.toObject(),
+        messageContent,
+        reportReason
+      };
+    })
+  );
+
+  res.json({
+    userId,
+    currentTrustScore: user.trustScore,
+    blocked: user.blocked,
+    history: historyWithDetails,
+    count: historyWithDetails.length
+  });
 }));
 
 module.exports = router;

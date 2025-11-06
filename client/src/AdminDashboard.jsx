@@ -12,6 +12,7 @@ const AdminDashboard = () => {
   const [reports, setReports] = useState([]);
   const [users, setUsers] = useState([]);
   const [feedback, setFeedback] = useState([]);
+  const [appeals, setAppeals] = useState([]);
   const [activeTab, setActiveTab] = useState('stats');
 
   const headers = {
@@ -121,6 +122,26 @@ const AdminDashboard = () => {
     }
   };
 
+  // Fetch appeals
+  const fetchAppeals = async (status = '') => {
+    setLoading(true);
+    try {
+      const url = status ? `${API_URL}/admin/appeals?status=${status}` : `${API_URL}/admin/appeals`;
+      const response = await fetch(url, { headers });
+      if (response.ok) {
+        const data = await response.json();
+        setAppeals(data);
+      } else {
+        toast.error('Failed to fetch appeals');
+      }
+    } catch (error) {
+      console.error('Failed to fetch appeals:', error);
+      toast.error('Error loading appeals');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Update report status
   const updateReport = async (reportId, status, action, adminNotes) => {
     try {
@@ -207,6 +228,29 @@ const AdminDashboard = () => {
     }
   };
 
+  // Review appeal
+  const reviewAppeal = async (appealId, status, adminResponse, trustScoreAdjustment = 0) => {
+    try {
+      const response = await fetch(`${API_URL}/admin/appeals/${appealId}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ status, adminResponse, trustScoreAdjustment })
+      });
+
+      if (response.ok) {
+        toast.success(`Appeal ${status} successfully`);
+        fetchAppeals();
+        fetchStats(); // Refresh stats to update blocked user count
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        toast.error(errorData.error || 'Failed to review appeal');
+      }
+    } catch (error) {
+      console.error('Failed to review appeal:', error);
+      toast.error('Error reviewing appeal');
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated && activeTab === 'stats') {
       fetchStats();
@@ -216,6 +260,8 @@ const AdminDashboard = () => {
       fetchUsers();
     } else if (isAuthenticated && activeTab === 'feedback') {
       fetchFeedback('new');
+    } else if (isAuthenticated && activeTab === 'appeals') {
+      fetchAppeals('pending');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, activeTab]);
@@ -285,7 +331,7 @@ const AdminDashboard = () => {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '2px solid #ddd' }}>
-        {['stats', 'reports', 'users', 'feedback'].map((tab) => (
+        {['stats', 'reports', 'appeals', 'users', 'feedback'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -309,12 +355,19 @@ const AdminDashboard = () => {
 
       {/* Stats Tab */}
       {activeTab === 'stats' && stats && !loading && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-          <StatCard title="Total Users" value={stats.totalUsers} />
-          <StatCard title="Blocked Users" value={stats.blockedUsers} color="#dc3545" />
-          <StatCard title="Pending Reports" value={stats.pendingReports} color="#ffc107" />
-          <StatCard title="Total Reports" value={stats.totalReports} />
-          <StatCard title="Avg Trust Score" value={stats.averageTrustScore.toFixed(1)} color="#28a745" />
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+            <StatCard title="Total Users" value={stats.totalUsers} />
+            <StatCard title="Blocked Users" value={stats.blockedUsers} color="#dc3545" />
+            <StatCard title="Total Messages" value={stats.totalMessages} color="#17a2b8" />
+            <StatCard title="Avg Trust Score" value={stats.averageTrustScore.toFixed(1)} color="#28a745" />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+            <StatCard title="Pending Reports" value={stats.pendingReports} color="#ffc107" />
+            <StatCard title="Total Reports" value={stats.totalReports} />
+            <StatCard title="Pending Appeals" value={stats.pendingAppeals} color="#ffc107" />
+            <StatCard title="Total Appeals" value={stats.totalAppeals} />
+          </div>
         </div>
       )}
 
@@ -335,6 +388,29 @@ const AdminDashboard = () => {
                 key={report._id}
                 report={report}
                 onUpdate={updateReport}
+              />
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Appeals Tab */}
+      {activeTab === 'appeals' && !loading && (
+        <div>
+          <div style={{ marginBottom: '1rem' }}>
+            <button onClick={() => fetchAppeals('')} style={filterButtonStyle}>All</button>
+            <button onClick={() => fetchAppeals('pending')} style={filterButtonStyle}>Pending</button>
+            <button onClick={() => fetchAppeals('approved')} style={filterButtonStyle}>Approved</button>
+            <button onClick={() => fetchAppeals('denied')} style={filterButtonStyle}>Denied</button>
+          </div>
+          {appeals.length === 0 ? (
+            <p>No appeals found</p>
+          ) : (
+            appeals.map((appeal) => (
+              <AppealCard
+                key={appeal._id}
+                appeal={appeal}
+                onReview={reviewAppeal}
               />
             ))
           )}
@@ -691,6 +767,144 @@ const FeedbackCard = ({ feedback, onUpdate, onDelete }) => {
           Delete Feedback
         </button>
       </div>
+    </div>
+  );
+};
+
+// Appeal Card Component
+const AppealCard = ({ appeal, onReview }) => {
+  const [response, setResponse] = useState(appeal.adminResponse || '');
+  const [trustAdjustment, setTrustAdjustment] = useState(20);
+
+  const getAppealStatusColor = (status) => {
+    switch (status) {
+      case 'pending': return '#ffc107';
+      case 'approved': return '#28a745';
+      case 'denied': return '#dc3545';
+      default: return '#6c757d';
+    }
+  };
+
+  return (
+    <div style={{
+      backgroundColor: '#f8f9fa',
+      padding: '1rem',
+      marginBottom: '1rem',
+      borderRadius: '8px',
+      borderLeft: `4px solid ${getAppealStatusColor(appeal.status)}`
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+        <strong>User: {appeal.userId}</strong>
+        <span style={{
+          padding: '0.25rem 0.5rem',
+          backgroundColor: getAppealStatusColor(appeal.status),
+          color: 'white',
+          borderRadius: '4px',
+          fontSize: '0.75rem'
+        }}>
+          {appeal.status.toUpperCase()}
+        </span>
+      </div>
+
+      <div style={{ marginBottom: '0.5rem' }}>
+        <p><strong>Current Trust Score:</strong>
+          <span style={{ color: getTrustScoreColor(appeal.userTrustScore), fontWeight: 'bold', marginLeft: '0.5rem' }}>
+            {appeal.userTrustScore}
+          </span>
+        </p>
+        <p><strong>Blocked:</strong> {appeal.userBlocked ? 'Yes' : 'No'}</p>
+        {appeal.userBlockedReason && (
+          <p style={{ color: '#dc3545' }}><strong>Block Reason:</strong> {appeal.userBlockedReason}</p>
+        )}
+      </div>
+
+      <p><strong>Appeal Reason:</strong></p>
+      <p style={{
+        padding: '0.75rem',
+        backgroundColor: 'white',
+        borderRadius: '4px',
+        whiteSpace: 'pre-wrap',
+        marginTop: '0.5rem'
+      }}>
+        {appeal.reason}
+      </p>
+
+      <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem' }}>
+        Submitted: {new Date(appeal.createdAt).toLocaleString()}
+      </p>
+
+      {appeal.reviewedAt && (
+        <div style={{ marginTop: '0.5rem' }}>
+          <p style={{ fontSize: '0.75rem', color: '#666' }}>
+            Reviewed: {new Date(appeal.reviewedAt).toLocaleString()}
+            {appeal.reviewedBy && ` by ${appeal.reviewedBy}`}
+          </p>
+          {appeal.adminResponse && (
+            <p style={{
+              marginTop: '0.5rem',
+              padding: '0.5rem',
+              backgroundColor: '#fff3cd',
+              borderRadius: '4px',
+              fontSize: '0.875rem'
+            }}>
+              <strong>Admin Response:</strong> {appeal.adminResponse}
+            </p>
+          )}
+        </div>
+      )}
+
+      {appeal.status === 'pending' && (
+        <div style={{ marginTop: '1rem' }}>
+          <textarea
+            value={response}
+            onChange={(e) => setResponse(e.target.value)}
+            placeholder="Admin response to user..."
+            style={{
+              width: '100%',
+              padding: '0.5rem',
+              marginBottom: '0.5rem',
+              borderRadius: '4px',
+              border: '1px solid #ddd',
+              minHeight: '80px',
+              fontFamily: 'inherit',
+              boxSizing: 'border-box'
+            }}
+          />
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <label style={{ fontSize: '0.875rem' }}>
+              Trust Score Adjustment (if approving):
+            </label>
+            <input
+              type="number"
+              value={trustAdjustment}
+              onChange={(e) => setTrustAdjustment(parseInt(e.target.value) || 0)}
+              min="-50"
+              max="50"
+              style={{
+                padding: '0.5rem',
+                width: '80px',
+                borderRadius: '4px',
+                border: '1px solid #ddd'
+              }}
+            />
+            <span style={{ fontSize: '0.75rem', color: '#666' }}>(-50 to +50)</span>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={() => onReview(appeal._id, 'approved', response, trustAdjustment)}
+              style={{ ...actionButtonStyle, backgroundColor: '#28a745' }}
+            >
+              Approve & Unblock
+            </button>
+            <button
+              onClick={() => onReview(appeal._id, 'denied', response, 0)}
+              style={{ ...actionButtonStyle, backgroundColor: '#dc3545' }}
+            >
+              Deny Appeal
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
