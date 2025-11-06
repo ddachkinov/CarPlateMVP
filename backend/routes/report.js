@@ -5,10 +5,10 @@ const User = require('../models/User');
 const Message = require('../models/Message');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { checkUserBlocked } = require('../middleware/blockCheck');
+const { updateTrustScore, analyzeRepeatOffender, getTrustScoreHistory } = require('../services/trustScoreService');
 
 // Trust score thresholds
 const TRUST_PENALTY_PER_REPORT = 10;
-const AUTO_BLOCK_THRESHOLD = 50;
 
 /**
  * POST /api/report
@@ -51,46 +51,50 @@ router.post('/', checkUserBlocked, asyncHandler(async (req, res) => {
 
   await report.save();
 
-  // Update reported user's trust score
-  const reportedUser = await User.findOne({ userId: reportedUserId });
+  // Analyze if user is a repeat offender
+  const offenderAnalysis = await analyzeRepeatOffender(reportedUserId);
 
-  if (reportedUser) {
-    const newTrustScore = Math.max(reportedUser.trustScore - TRUST_PENALTY_PER_REPORT, 0);
+  // Calculate penalty with escalation for repeat offenders
+  const basePenalty = TRUST_PENALTY_PER_REPORT;
+  const actualPenalty = -1 * basePenalty * offenderAnalysis.escalationMultiplier;
 
-    // Check if user should be auto-blocked
-    if (newTrustScore < AUTO_BLOCK_THRESHOLD && !reportedUser.blocked) {
-      await User.updateOne(
-        { userId: reportedUserId },
-        {
-          trustScore: newTrustScore,
-          blocked: true,
-          blockedReason: 'Automatic block: Trust score dropped below threshold due to multiple reports',
-          blockedAt: new Date()
-        }
-      );
+  console.log(`⚖️ Repeat offender analysis for ${reportedUserId}:`, offenderAnalysis);
 
-      console.log(`🚫 User ${reportedUserId} auto-blocked due to low trust score (${newTrustScore})`);
-
-      return res.status(201).json({
-        message: 'Report submitted. User has been automatically blocked.',
-        report,
-        userBlocked: true,
-        newTrustScore
-      });
-    } else {
-      await User.updateOne(
-        { userId: reportedUserId },
-        { trustScore: newTrustScore }
-      );
-
-      console.log(`📉 User ${reportedUserId} trust score decreased to ${newTrustScore}`);
+  // Update trust score with history tracking
+  const trustUpdate = await updateTrustScore(
+    reportedUserId,
+    actualPenalty,
+    'report_received',
+    {
+      details: offenderAnalysis.isRepeatOffender
+        ? `Report received (Repeat offender: ${offenderAnalysis.recentViolations} recent violations, penalty ${offenderAnalysis.escalationMultiplier}x)`
+        : `Report received: ${reason}`,
+      relatedReportId: report._id,
+      relatedMessageId: message._id,
+      performedBy: reporterId
     }
+  );
+
+  if (trustUpdate.blocked) {
+    console.log(`🚫 User ${reportedUserId} auto-blocked due to low trust score (${trustUpdate.newScore})`);
+
+    return res.status(201).json({
+      message: 'Report submitted. User has been automatically blocked.',
+      report,
+      userBlocked: true,
+      newTrustScore: trustUpdate.newScore,
+      previousTrustScore: trustUpdate.previousScore,
+      isRepeatOffender: offenderAnalysis.isRepeatOffender
+    });
   }
 
   res.status(201).json({
     message: 'Report submitted successfully',
     report,
-    userBlocked: false
+    userBlocked: false,
+    newTrustScore: trustUpdate.newScore,
+    previousTrustScore: trustUpdate.previousScore,
+    isRepeatOffender: offenderAnalysis.isRepeatOffender
   });
 }));
 
@@ -137,6 +141,23 @@ router.get('/user/:userId', asyncHandler(async (req, res) => {
     emailVerified: user.emailVerified,
     emailVerifiedAt: user.emailVerifiedAt,
     registered: true
+  });
+}));
+
+/**
+ * GET /api/report/user/:userId/history
+ * Get trust score history for a user
+ */
+router.get('/user/:userId/history', asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const limit = parseInt(req.query.limit) || 50;
+
+  const history = await getTrustScoreHistory(userId, limit);
+
+  res.json({
+    userId,
+    history,
+    count: history.length
   });
 }));
 

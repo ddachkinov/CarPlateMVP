@@ -94,6 +94,9 @@ app.use('/api/notifications', notificationRoutes);
 const feedbackRoutes = require('./routes/feedback');
 app.use('/api/feedback', feedbackRoutes);
 
+const appealRoutes = require('./routes/appeal');
+app.use('/api/appeal', appealRoutes);
+
 // Test route
 app.get('/', (req, res) => {
   res.send('API is working');

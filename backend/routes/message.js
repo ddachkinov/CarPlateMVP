@@ -11,6 +11,7 @@ const { sendMessageNotificationEmail } = require('../services/emailService');
 const { checkUserBlocked } = require('../middleware/blockCheck');
 const { moderateAndAct } = require('../services/moderationService');
 const { sendPushToUser, createMessageNotification } = require('../services/pushService');
+const { updateTrustScore } = require('../services/trustScoreService');
 
 // Apply rate limiting, validation, and block check middleware
 router.post('/', messageRateLimiter, validateMessageRequest, checkUserBlocked, asyncHandler(async (req, res) => {
@@ -37,26 +38,17 @@ router.post('/', messageRateLimiter, validateMessageRequest, checkUserBlocked, a
     });
     await autoReport.save();
 
-    // Reduce user's trust score for flagged content
-    const user = await User.findOne({ userId: senderId });
-    if (user) {
-      const newTrustScore = Math.max(user.trustScore - 20, 0);
-
-      // Auto-block if trust score is too low
-      if (newTrustScore < 50) {
-        await User.updateOne(
-          { userId: senderId },
-          {
-            trustScore: newTrustScore,
-            blocked: true,
-            blockedReason: 'Automatic block: AI-detected policy violation',
-            blockedAt: new Date()
-          }
-        );
-      } else {
-        await User.updateOne({ userId: senderId }, { trustScore: newTrustScore });
+    // Reduce user's trust score for flagged content using trust score service
+    await updateTrustScore(
+      senderId,
+      -20, // AI moderation penalty
+      'ai_moderation',
+      {
+        details: `AI moderation blocked message: ${modResult.reason} (severity: ${modResult.severity})`,
+        relatedMessageId: tempMessage._id,
+        performedBy: 'system'
       }
-    }
+    );
 
     return res.status(403).json({
       error: 'Message blocked',
