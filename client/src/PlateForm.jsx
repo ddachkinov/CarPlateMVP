@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading, isGuest, isPremium, onUpgradeClick }) => {
+const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading, isGuest, isPremium, onUpgradeClick, urgency, setUrgency, context, setContext }) => {
   const [loadingOCR, setLoadingOCR] = useState(false);
-  const [showWarning, setShowWarning] = useState(false);
+  const [showUrgencyInfo, setShowUrgencyInfo] = useState(false);
 
   const predefinedMessages = [
     "Your headlights are on",
@@ -94,109 +94,113 @@ const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading
         </p>
       )}
 
-{!isPremium ? (
-  <>
-    <select
-      value={message}
-      onChange={(e) => setMessage(e.target.value)}
-      style={{
-        padding: '0.5rem',
-        width: '90%',
-        maxWidth: '600px',
-        borderRadius: '8px',
-        border: '1px solid #ccc',
-        marginBottom: '0.5rem'
-      }}
-    >
-      <option value="">Select a predefined message...</option>
-      {predefinedMessages.map((msg, idx) => (
-        <option key={idx} value={msg}>{msg}</option>
-      ))}
-    </select>
-
-    <textarea
-      readOnly
-      placeholder="⭐ Upgrade to Premium to send custom messages"
-      value=""
-      onFocus={() => setShowWarning(true)}
-      style={{
-        padding: '0.5rem',
-        width: '90%',
-        maxWidth: '600px',
-        borderRadius: '8px',
-        border: '1px solid #ccc',
-        height: '100px',
-        marginBottom: '1rem',
-        backgroundColor: '#f5f5f5',
-        color: '#777',
-        resize: 'none',
-        cursor: 'not-allowed'
-      }}
-    />
-
-{showWarning && (
-  <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
-    <p style={{ color: '#dc3545', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-      🛑 Guests can only send predefined messages.
-    </p>
-    {onUpgradeClick && (
-      <button
-        type="button"
-        onClick={onUpgradeClick}
+      {/* 🔥 NEW: Everyone can send custom messages for FREE! */}
+      <select
+        value=""
+        onChange={(e) => setMessage(e.target.value)}
         style={{
-          padding: '0.5rem 1rem',
-          backgroundColor: '#ffc107',
-          color: '#000',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          fontWeight: 'bold',
-          fontSize: '0.875rem'
+          padding: '0.5rem',
+          width: '90%',
+          maxWidth: '600px',
+          borderRadius: '8px',
+          border: '1px solid #ccc',
+          marginBottom: '0.5rem'
         }}
       >
-        ⭐ Claim a Plate to Unlock Custom Messages
-      </button>
-    )}
-  </div>
-)}
+        <option value="">💬 Quick message...</option>
+        {predefinedMessages.map((msg, idx) => (
+          <option key={idx} value={msg}>{msg}</option>
+        ))}
+      </select>
 
-  </>
-) : (
-  <>
-    <select
-      value=""
-      onChange={(e) => setMessage(e.target.value)}
-      style={{
-        padding: '0.5rem',
-        width: '90%',
-        maxWidth: '600px',
-        borderRadius: '8px',
-        border: '1px solid #ccc',
-        marginBottom: '0.5rem'
-      }}
-    >
-      <option value="">💬 Quick message...</option>
-      {predefinedMessages.map((msg, idx) => (
-        <option key={idx} value={msg}>{msg}</option>
-      ))}
-    </select>
+      <textarea
+        placeholder="Or write a custom message... (FREE for everyone!)"
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        style={{
+          padding: '0.5rem',
+          width: '90%',
+          maxWidth: '600px',
+          borderRadius: '8px',
+          border: '1px solid #ccc',
+          height: '100px',
+          marginBottom: '0.5rem',
+          resize: 'vertical'
+        }}
+      />
 
-    <textarea
-      placeholder="Write your message..."
-      value={message}
-      onChange={(e) => setMessage(e.target.value)}
-      style={{
-        padding: '0.5rem',
-        width: '90%',
-        maxWidth: '600px',
-        borderRadius: '8px',
-        border: '1px solid #ccc',
-        height: '100px',
-        marginBottom: '1rem'
-      }}
-    />
-  </>
-)}
+      {/* 🔥 NEW: Urgency Selector */}
+      <div style={{ width: '90%', maxWidth: '600px', marginBottom: '0.5rem' }}>
+        <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 'bold' }}>
+          Urgency Level:
+          <button
+            type="button"
+            onClick={() => setShowUrgencyInfo(!showUrgencyInfo)}
+            style={{
+              marginLeft: '0.5rem',
+              background: 'none',
+              border: 'none',
+              color: '#007bff',
+              cursor: 'pointer',
+              fontSize: '0.875rem'
+            }}
+          >
+            ℹ️ What's this?
+          </button>
+        </label>
+        <select
+          value={urgency || 'normal'}
+          onChange={(e) => setUrgency(e.target.value)}
+          style={{
+            padding: '0.5rem',
+            width: '100%',
+            borderRadius: '8px',
+            border: '1px solid #ccc'
+          }}
+        >
+          <option value="normal">🟢 Normal - Not time sensitive</option>
+          <option value="urgent">🟡 Urgent - Please respond soon (15 min)</option>
+          <option value="emergency">🔴 Emergency - Immediate response needed (5 min)</option>
+        </select>
+
+        {showUrgencyInfo && (
+          <div style={{
+            marginTop: '0.5rem',
+            padding: '0.75rem',
+            backgroundColor: '#e7f3ff',
+            borderRadius: '8px',
+            border: '1px solid #b3d9ff',
+            fontSize: '0.875rem'
+          }}>
+            <p style={{ margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>How urgency works:</p>
+            <ul style={{ margin: '0', paddingLeft: '1.5rem' }}>
+              <li><strong>Normal:</strong> No deadline, casual message</li>
+              <li><strong>Urgent:</strong> 15-minute countdown. If no response, can escalate to parking enforcement</li>
+              <li><strong>Emergency:</strong> 5-minute countdown. For blocking driveways, fire lanes, etc.</li>
+            </ul>
+            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.8rem', color: '#666' }}>
+              💡 Premium car owners get instant SMS alerts to avoid escalation!
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* 🔥 NEW: Optional Context Field */}
+      <input
+        type="text"
+        placeholder="Optional: Add context (e.g., 'blocking driveway #5')"
+        value={context || ''}
+        onChange={(e) => setContext(e.target.value)}
+        style={{
+          padding: '0.5rem',
+          width: '90%',
+          maxWidth: '600px',
+          borderRadius: '8px',
+          border: '1px solid #ccc',
+          marginBottom: '1rem',
+          fontSize: '0.875rem'
+        }}
+      />
 
       <button
         type="submit"

@@ -122,9 +122,12 @@ const PricingPage = ({ userId, userEmail, isPremium }) => {
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '1rem' }}>Choose Your Plan</h2>
+      <h2 style={{ textAlign: 'center', marginBottom: '1rem' }}>Protect Your Car with CarPlate Premium</h2>
+      <p style={{ textAlign: 'center', color: '#666', marginBottom: '1rem', fontSize: '1.1rem' }}>
+        <strong>Never miss an urgent message about your car again.</strong>
+      </p>
       <p style={{ textAlign: 'center', color: '#666', marginBottom: '3rem' }}>
-        Upgrade to Premium to unlock powerful features and support CarPlate
+        Get instant SMS alerts when someone needs to reach you about your vehicle. Avoid towing, tickets, and angry neighbors.
       </p>
 
       <div style={{
@@ -139,15 +142,17 @@ const PricingPage = ({ userId, userEmail, isPremium }) => {
           price="$0"
           period="forever"
           features={[
-            'Send predefined safety messages',
-            'Claim unlimited license plates',
-            'Receive email notifications',
-            'Message inbox for your plates',
-            'Report inappropriate messages'
+            '✅ Send unlimited messages (FREE for everyone!)',
+            '✅ Send custom messages (no restrictions)',
+            '✅ Claim unlimited license plates',
+            '✅ Basic email notifications (delayed)',
+            '✅ Message inbox for your plates'
           ]}
           limitations={[
-            'No custom messages',
-            'Standard support'
+            '⏱️ Delayed notifications (check manually)',
+            '❌ No instant SMS alerts',
+            '❌ No response ability',
+            '❌ Risk missing urgent messages'
           ]}
           buttonText={!isPremium ? 'Current Plan' : 'Downgrade to Free'}
           buttonAction={isPremium ? handleDowngrade : null}
@@ -155,18 +160,21 @@ const PricingPage = ({ userId, userEmail, isPremium }) => {
           current={!isPremium}
         />
 
-        {/* Premium Plan */}
+        {/* Premium Plan - FOR CAR OWNERS */}
         <PricingCard
           title="Premium"
-          price="$4.99"
+          subtitle="🚗 For Car Owners Who Want Peace of Mind"
+          price="$9.99"
           period="per month"
           features={[
-            '✨ Send custom messages',
-            '✨ Premium supporter badge',
-            '✨ Priority email support',
-            '⚡ Instant notifications (coming soon)',
-            '📊 Advanced inbox features (coming soon)',
-            '💾 Extended message history (coming soon)'
+            '🚨 Instant SMS & Push Notifications',
+            '⚡ Get alerted within seconds (avoid towing!)',
+            '💬 Quick Response: Reply with ETA',
+            '🏆 Responsive Driver Badge',
+            '⏰ See urgency levels & countdown timers',
+            '📊 Reputation score tracking',
+            '🔔 Priority notifications for urgent messages',
+            '✨ Premium support'
           ]}
           limitations={[]}
           buttonText={isPremium ? 'Manage Subscription' : 'Upgrade to Premium'}
@@ -193,12 +201,15 @@ const PricingPage = ({ userId, userEmail, isPremium }) => {
             </tr>
           </thead>
           <tbody>
-            <FeatureRow feature="Predefined safety messages" free={true} premium={true} />
-            <FeatureRow feature="Custom messages" free={false} premium={true} />
+            <FeatureRow feature="Send unlimited messages" free={true} premium={true} />
+            <FeatureRow feature="Custom message content" free={true} premium={true} />
             <FeatureRow feature="Claim license plates" free={true} premium={true} />
-            <FeatureRow feature="Email notifications" free={true} premium={true} />
-            <FeatureRow feature="Premium badge" free={false} premium={true} />
-            <FeatureRow feature="Priority support" free={false} premium={true} />
+            <FeatureRow feature="Instant SMS notifications" free={false} premium={true} />
+            <FeatureRow feature="Instant push notifications" free={false} premium={true} />
+            <FeatureRow feature="Quick response ability" free={false} premium={true} />
+            <FeatureRow feature="See urgency & countdown timers" free={false} premium={true} />
+            <FeatureRow feature="Reputation tracking" free={false} premium={true} />
+            <FeatureRow feature="Responsive Driver badge" free={false} premium={true} />
           </tbody>
         </table>
       </div>
@@ -208,23 +219,28 @@ const PricingPage = ({ userId, userEmail, isPremium }) => {
         <h3 style={{ marginBottom: '1.5rem' }}>Frequently Asked Questions</h3>
 
         <FAQItem
+          question="Why should I upgrade to Premium?"
+          answer="Premium gives you instant SMS/push notifications so you never miss urgent messages about your car. Avoid towing ($200+), parking tickets ($50-150), and angry neighbors. Free users only get delayed email notifications."
+        />
+
+        <FAQItem
+          question="Is sending messages really free?"
+          answer="Yes! Anyone can send unlimited custom messages for FREE. We make money by helping car owners protect their vehicles with instant notifications, not by charging senders."
+        />
+
+        <FAQItem
+          question="What happens if someone marks my message as urgent?"
+          answer="Urgent messages have countdown timers (15 minutes). If the car owner doesn't respond in time, the message can be escalated to parking enforcement or towing. Premium owners get instant alerts to avoid this."
+        />
+
+        <FAQItem
           question="Can I cancel my subscription anytime?"
-          answer="Yes! You can cancel your Premium subscription at any time. You'll retain access to Premium features until the end of your billing period."
+          answer="Yes! You can cancel your Premium subscription at any time. You'll retain access to Premium features until the end of your billing period. Your claimed plates and message history remain intact."
         />
 
         <FAQItem
-          question="What payment methods do you accept?"
-          answer="We accept all major credit cards (Visa, Mastercard, American Express, Discover) through Stripe, our secure payment processor."
-        />
-
-        <FAQItem
-          question="Will I lose my plates if I cancel?"
-          answer="No! Your claimed plates and message history remain intact if you cancel Premium. You'll just be limited to predefined messages going forward."
-        />
-
-        <FAQItem
-          question="Is my payment information secure?"
-          answer="Absolutely. We use Stripe for payment processing, which is PCI-DSS compliant and handles billions of dollars in transactions annually."
+          question="How do instant notifications work?"
+          answer="Premium users receive SMS text messages and push notifications within seconds when someone messages their plate. Free users only get delayed email notifications that they must check manually."
         />
       </div>
     </div>
@@ -234,6 +250,7 @@ const PricingPage = ({ userId, userEmail, isPremium }) => {
 // Pricing Card Component
 const PricingCard = ({
   title,
+  subtitle,
   price,
   period,
   features,
@@ -259,18 +276,21 @@ const PricingCard = ({
           top: '-15px',
           left: '50%',
           transform: 'translateX(-50%)',
-          backgroundColor: '#007bff',
+          backgroundColor: '#dc3545',
           color: 'white',
           padding: '0.25rem 1rem',
           borderRadius: '20px',
           fontSize: '0.875rem',
           fontWeight: 'bold'
         }}>
-          MOST POPULAR
+          🔥 AVOID TOWING & TICKETS
         </div>
       )}
 
-      <h3 style={{ marginBottom: '0.5rem', fontSize: '1.5rem' }}>{title}</h3>
+      <h3 style={{ marginBottom: '0.25rem', fontSize: '1.5rem' }}>{title}</h3>
+      {subtitle && (
+        <p style={{ color: '#666', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{subtitle}</p>
+      )}
       <div style={{ marginBottom: '1.5rem' }}>
         <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#007bff' }}>{price}</span>
         <span style={{ color: '#666', marginLeft: '0.5rem' }}>/{period}</span>

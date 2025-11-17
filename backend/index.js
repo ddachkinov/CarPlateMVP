@@ -97,6 +97,13 @@ app.use('/api/feedback', feedbackRoutes);
 const appealRoutes = require('./routes/appeal');
 app.use('/api/appeal', appealRoutes);
 
+// 🔥 NEW: Escalation and Response routes for pivot
+const escalationRoutes = require('./routes/escalation');
+app.use('/api/escalation', escalationRoutes);
+
+const responseRoutes = require('./routes/response');
+app.use('/api/response', responseRoutes);
+
 // Test route
 app.get('/', (req, res) => {
   res.send('API is working');

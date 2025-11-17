@@ -45,6 +45,7 @@ const validatePlate = (plate) => {
  * - Must be 2-500 characters
  * - No script tags or dangerous content
  * - Predefined messages are always valid
+ * 🔥 NEW: Custom messages are FREE for everyone! Premium is for car owners (instant notifications)
  */
 const validateMessage = (message, isGuest = false, isPremium = false) => {
   if (!message || typeof message !== 'string') {
@@ -66,22 +67,8 @@ const validateMessage = (message, isGuest = false, isPremium = false) => {
     return { valid: true, sanitized: trimmed, isPredefined: true };
   }
 
-  // Guests can only send predefined messages
-  if (isGuest) {
-    return {
-      valid: false,
-      error: 'Guests can only send predefined safety messages. Please claim a plate to send custom messages.'
-    };
-  }
-
-  // Non-premium registered users also limited to predefined messages
-  if (!isPremium) {
-    return {
-      valid: false,
-      error: 'Custom messages are a premium feature. Upgrade to Premium to send custom messages.',
-      premiumRequired: true
-    };
-  }
+  // 🔥 NEW: Custom messages are now FREE for everyone!
+  // No premium requirement for sending - premium is for CAR OWNERS (instant notifications)
 
   // Validate length
   if (trimmed.length < 2 || trimmed.length > 500) {
@@ -157,9 +144,10 @@ const validateEmail = (email) => {
 
 /**
  * Middleware: Validate message sending request
+ * 🔥 NEW: No premium check! Everyone can send custom messages.
  */
 const validateMessageRequest = async (req, res, next) => {
-  const { plate, message, senderId } = req.body;
+  const { plate, message, senderId, urgency, context } = req.body;
 
   // Validate plate
   const plateValidation = validatePlate(plate);
@@ -173,38 +161,35 @@ const validateMessageRequest = async (req, res, next) => {
     return res.status(400).json({ error: userValidation.error });
   }
 
-  // Determine if user is a guest and check premium status
+  // Determine if user is a guest (for rate limiting purposes)
   let isGuest = true;
-  let isPremium = false;
 
   if (senderId) {
-    const User = require('../models/User');
     const Plate = require('../models/Plate');
-
-    const [user, ownedPlates] = await Promise.all([
-      User.findOne({ userId: senderId }),
-      Plate.find({ ownerId: senderId })
-    ]);
-
+    const ownedPlates = await Plate.find({ ownerId: senderId });
     isGuest = ownedPlates.length === 0;
-    isPremium = user?.premium === true && user?.subscriptionStatus === 'active';
   }
 
-  // Validate message
-  const messageValidation = validateMessage(message, isGuest, isPremium);
+  // Validate message (no premium check!)
+  const messageValidation = validateMessage(message, isGuest, false);
   if (!messageValidation.valid) {
-    const statusCode = messageValidation.premiumRequired ? 402 : 400; // 402 Payment Required
-    return res.status(statusCode).json({
-      error: messageValidation.error,
-      premiumRequired: messageValidation.premiumRequired || false
-    });
+    return res.status(400).json({ error: messageValidation.error });
   }
+
+  // Validate urgency level (optional)
+  const validUrgencyLevels = ['normal', 'urgent', 'emergency'];
+  const sanitizedUrgency = urgency && validUrgencyLevels.includes(urgency) ? urgency : 'normal';
+
+  // Validate context (optional)
+  const sanitizedContext = context ? sanitizeString(context).substring(0, 200) : null;
 
   // Attach sanitized values to request
   req.sanitized = {
     plate: plateValidation.sanitized,
     message: messageValidation.sanitized,
     senderId: userValidation.sanitized,
+    urgency: sanitizedUrgency,
+    context: sanitizedContext,
     isGuest,
     isPredefinedMessage: messageValidation.isPredefined
   };

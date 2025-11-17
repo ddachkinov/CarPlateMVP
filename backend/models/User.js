@@ -52,7 +52,22 @@ const userSchema = new mongoose.Schema({
     enum: ['active', 'canceled', 'past_due', 'trialing', 'incomplete', 'incomplete_expired', 'unpaid'],
     default: null
   },
-  subscriptionEndDate: { type: Date }            // When subscription ends/renews
+  subscriptionEndDate: { type: Date },           // When subscription ends/renews
+
+  // 🔥 NEW: Reputation & Response System
+  reputation: {
+    responseRate: { type: Number, default: 0 },   // Percentage of messages responded to
+    averageResponseTime: { type: Number },        // Average time to respond (minutes)
+    totalMessages: { type: Number, default: 0 },  // Total messages received
+    totalResponses: { type: Number, default: 0 }, // Total responses sent
+    escalationsReceived: { type: Number, default: 0 }, // Times their plates were escalated
+    escalationsResolved: { type: Number, default: 0 }, // Times they resolved before authority contact
+  },
+  badges: [{
+    type: String,
+    enum: ['responsive_driver', 'quick_responder', 'verified_owner', 'community_hero', 'frequent_offender']
+  }],
+  lastResponseAt: { type: Date },                 // When they last responded to a message
 });
 
 // Indexes for query optimization

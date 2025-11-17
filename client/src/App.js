@@ -16,6 +16,8 @@ function App() {
   const [view, setView] = useState('inbox'); // 'inbox', 'profile', 'premium', or 'admin'
   const [plate, setPlate] = useState('');
   const [message, setMessage] = useState('');
+  const [urgency, setUrgency] = useState('normal'); // 🔥 NEW: urgency level
+  const [context, setContext] = useState(''); // 🔥 NEW: optional context
   const [loading, setLoading] = useState(false);
   const [ownedPlates, setOwnedPlates] = useState([]);
   const [inbox, setInbox] = useState([]);
@@ -124,11 +126,13 @@ useEffect(() => {
     setLoading(true);
     try {
       console.log('Registering plate:', plate);
-      console.log('Sending message:', { plate, message, senderId: userId });
+      console.log('Sending message:', { plate, message, senderId: userId, urgency, context });
       await sendMessage({
         plate: plate.trim(),
         message: message.trim(),
-        senderId: userId
+        senderId: userId,
+        urgency, // 🔥 NEW
+        context: context?.trim() || null // 🔥 NEW
       });
 
       console.log('✅ Message sent successfully!');
@@ -137,6 +141,8 @@ useEffect(() => {
 
       setPlate('');
       setMessage('');
+      setUrgency('normal'); // 🔥 NEW: reset urgency
+      setContext(''); // 🔥 NEW: reset context
       toast.success('✅ Message sent successfully!');
     } catch (err) {
       console.error('❌ Error during submit:', err.response?.data || err.message);
@@ -283,6 +289,10 @@ useEffect(() => {
           setPlate={setPlate}
           message={message}
           setMessage={setMessage}
+          urgency={urgency} // 🔥 NEW
+          setUrgency={setUrgency} // 🔥 NEW
+          context={context} // 🔥 NEW
+          setContext={setContext} // 🔥 NEW
           handleSubmit={handleSubmit}
           loading={loading}
           isGuest={!ownedPlates.length}

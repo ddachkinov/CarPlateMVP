@@ -16,7 +16,15 @@ const { updateTrustScore } = require('../services/trustScoreService');
 // Apply rate limiting, validation, and block check middleware
 router.post('/', messageRateLimiter, validateMessageRequest, checkUserBlocked, asyncHandler(async (req, res) => {
   // Use sanitized values from validation middleware
-  const { plate, message, senderId } = req.sanitized;
+  const { plate, message, senderId, urgency, context } = req.sanitized;
+
+  // 🔥 NEW: Calculate escalation deadline based on urgency level
+  let escalationDeadline = null;
+  if (urgency === 'urgent') {
+    escalationDeadline = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+  } else if (urgency === 'emergency') {
+    escalationDeadline = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+  }
 
   // AI Content Moderation (if configured)
   const modResult = await moderateAndAct(message, senderId);
@@ -79,8 +87,15 @@ router.post('/', messageRateLimiter, validateMessageRequest, checkUserBlocked, a
     await Plate.create({ plate }); // Create without ownerId
   }
 
-  // Save the message
-  const newMessage = new Message({ plate, message, senderId });
+  // Save the message with new urgency and escalation fields
+  const newMessage = new Message({
+    plate,
+    message,
+    senderId,
+    urgency,
+    context,
+    escalationDeadline
+  });
   await newMessage.save();
 
   // Refetch plate to ensure we have the latest version
