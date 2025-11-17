@@ -73,144 +73,110 @@ const PlateForm = ({ plate, setPlate, message, setMessage, handleSubmit, loading
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
-        <input
-          type="text"
-          placeholder="Plate"
-          value={plate}
-          onChange={(e) => setPlate(e.target.value)}
-          style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #ccc', width: '200px' }}
-        />
-        <label style={{ background: '#007bff', color: 'white', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer' }}>
-        📷
-          <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
-        </label>
+    <form onSubmit={handleSubmit} className="card">
+      <div className="form-group">
+        <label className="form-label">License Plate Number</label>
+        <div style={{ display: 'flex', gap: 'var(--spacing-sm)', alignItems: 'center' }}>
+          <input
+            type="text"
+            placeholder="e.g. ABC123"
+            value={plate}
+            onChange={(e) => setPlate(e.target.value)}
+            className="form-input"
+            style={{ flex: 1 }}
+          />
+          <label className="btn btn-secondary" style={{ margin: 0, cursor: 'pointer' }}>
+            Upload Photo
+            <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+          </label>
+        </div>
+        {loadingOCR && (
+          <p className="form-hint" style={{ color: 'var(--color-primary)' }}>
+            Reading plate from image, please wait...
+          </p>
+        )}
       </div>
-
-      {loadingOCR && (
-        <p style={{ color: '#007bff', fontSize: '0.9rem', marginBottom: '1rem' }}>
-          🛠 Reading plate, please wait...
-        </p>
-      )}
 
 {!isPremium ? (
   <>
-    <select
-      value={message}
-      onChange={(e) => setMessage(e.target.value)}
-      style={{
-        padding: '0.5rem',
-        width: '90%',
-        maxWidth: '600px',
-        borderRadius: '8px',
-        border: '1px solid #ccc',
-        marginBottom: '0.5rem'
-      }}
-    >
-      <option value="">Select a predefined message...</option>
-      {predefinedMessages.map((msg, idx) => (
-        <option key={idx} value={msg}>{msg}</option>
-      ))}
-    </select>
-
-    <textarea
-      readOnly
-      placeholder="⭐ Upgrade to Premium to send custom messages"
-      value=""
-      onFocus={() => setShowWarning(true)}
-      style={{
-        padding: '0.5rem',
-        width: '90%',
-        maxWidth: '600px',
-        borderRadius: '8px',
-        border: '1px solid #ccc',
-        height: '100px',
-        marginBottom: '1rem',
-        backgroundColor: '#f5f5f5',
-        color: '#777',
-        resize: 'none',
-        cursor: 'not-allowed'
-      }}
-    />
-
-{showWarning && (
-  <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
-    <p style={{ color: '#dc3545', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-      🛑 Guests can only send predefined messages.
-    </p>
-    {onUpgradeClick && (
-      <button
-        type="button"
-        onClick={onUpgradeClick}
-        style={{
-          padding: '0.5rem 1rem',
-          backgroundColor: '#ffc107',
-          color: '#000',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          fontWeight: 'bold',
-          fontSize: '0.875rem'
-        }}
+    <div className="form-group">
+      <label className="form-label">Select a Message</label>
+      <select
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        className="form-select"
       >
-        ⭐ Claim a Plate to Unlock Custom Messages
-      </button>
-    )}
-  </div>
-)}
+        <option value="">Choose a predefined message...</option>
+        {predefinedMessages.map((msg, idx) => (
+          <option key={idx} value={msg}>{msg}</option>
+        ))}
+      </select>
+    </div>
 
+    <div className="form-group">
+      <label className="form-label">Custom Message</label>
+      <textarea
+        readOnly
+        placeholder="Upgrade to Premium to send custom messages"
+        value=""
+        onFocus={() => setShowWarning(true)}
+        className="form-textarea"
+        disabled
+      />
+      <p className="form-hint">Custom messages are available for Premium users only.</p>
+    </div>
+
+    {showWarning && onUpgradeClick && (
+      <div className="alert alert-warning" style={{ textAlign: 'center' }}>
+        <p style={{ marginBottom: 'var(--spacing-md)' }}>
+          <strong>Guest users can only send predefined messages.</strong>
+        </p>
+        <button
+          type="button"
+          onClick={onUpgradeClick}
+          className="btn btn-premium"
+        >
+          Claim a Plate to Unlock Premium
+        </button>
+      </div>
+    )}
   </>
 ) : (
   <>
-    <select
-      value=""
-      onChange={(e) => setMessage(e.target.value)}
-      style={{
-        padding: '0.5rem',
-        width: '90%',
-        maxWidth: '600px',
-        borderRadius: '8px',
-        border: '1px solid #ccc',
-        marginBottom: '0.5rem'
-      }}
-    >
-      <option value="">💬 Quick message...</option>
-      {predefinedMessages.map((msg, idx) => (
-        <option key={idx} value={msg}>{msg}</option>
-      ))}
-    </select>
+    <div className="form-group">
+      <label className="form-label">Quick Message (Optional)</label>
+      <select
+        value=""
+        onChange={(e) => setMessage(e.target.value)}
+        className="form-select"
+      >
+        <option value="">Select a quick message...</option>
+        {predefinedMessages.map((msg, idx) => (
+          <option key={idx} value={msg}>{msg}</option>
+        ))}
+      </select>
+    </div>
 
-    <textarea
-      placeholder="Write your message..."
-      value={message}
-      onChange={(e) => setMessage(e.target.value)}
-      style={{
-        padding: '0.5rem',
-        width: '90%',
-        maxWidth: '600px',
-        borderRadius: '8px',
-        border: '1px solid #ccc',
-        height: '100px',
-        marginBottom: '1rem'
-      }}
-    />
+    <div className="form-group">
+      <label className="form-label">Custom Message</label>
+      <textarea
+        placeholder="Write your custom message..."
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        className="form-textarea"
+      />
+      <p className="form-hint">As a Premium user, you can send custom messages.</p>
+    </div>
   </>
 )}
 
       <button
         type="submit"
         disabled={loading}
-        style={{
-          padding: '0.5rem 1rem',
-          backgroundColor: loading ? '#ccc' : '#007bff',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: 'pointer'
-        }}
+        className="btn btn-primary"
+        style={{ width: '100%' }}
       >
-        {loading ? 'Sending...' : 'Send'}
+        {loading ? 'Sending...' : 'Send Message'}
       </button>
     </form>
   );

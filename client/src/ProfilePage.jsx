@@ -182,66 +182,44 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned, onPremiumChanged }) =>
   };
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-        <h2 style={{ margin: 0 }}>🧑 Your Profile</h2>
-        {subscriptionData?.premium && (
-          <span style={{
-            padding: '0.25rem 0.6rem',
-            backgroundColor: '#ffc107',
-            color: '#000',
-            borderRadius: '4px',
-            fontSize: '0.75rem',
-            fontWeight: 'bold'
-          }}>
-            ⭐ PREMIUM
-          </span>
-        )}
+    <div>
+      <div className="card">
+        <div className="flex items-center gap-2 mb-2">
+          <h2 className="card-title" style={{ margin: 0 }}>Your Profile</h2>
+          {subscriptionData?.premium && (
+            <span className="badge badge-premium">PREMIUM</span>
+          )}
+        </div>
+        <p className="form-hint">
+          Your anonymous ID: <code>{userId}</code>
+        </p>
       </div>
-      <p style={{ fontSize: '0.9rem', color: '#555' }}>
-        Your anonymous ID: <code>{userId}</code>
-      </p>
 
       {/* Trust Score Display */}
       {trustData && (
-        <div style={{
-          marginTop: '1rem',
-          padding: '1rem',
-          backgroundColor: trustData.blocked ? '#ffe6e6' : '#f8f9fa',
-          borderRadius: '8px',
-          borderLeft: `4px solid ${trustData.blocked ? '#dc3545' : getTrustScoreColor(trustData.trustScore)}`
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className={`alert ${trustData.blocked ? 'alert-error' : 'alert-info'}`}>
+          <div className="flex justify-between items-center">
             <div>
               <strong>Trust Score:</strong>
               <span style={{
-                marginLeft: '0.5rem',
-                fontSize: '1.5rem',
-                fontWeight: 'bold',
+                marginLeft: 'var(--spacing-sm)',
+                fontSize: 'var(--font-size-xl)',
+                fontWeight: 'var(--font-weight-bold)',
                 color: getTrustScoreColor(trustData.trustScore)
               }}>
                 {trustData.trustScore}/100
               </span>
             </div>
             {trustData.blocked && (
-              <span style={{
-                padding: '0.25rem 0.5rem',
-                backgroundColor: '#dc3545',
-                color: 'white',
-                borderRadius: '4px',
-                fontSize: '0.75rem',
-                fontWeight: 'bold'
-              }}>
-                BLOCKED
-              </span>
+              <span className="badge badge-error">BLOCKED</span>
             )}
           </div>
           {trustData.blocked && (
-            <p style={{ marginTop: '0.5rem', color: '#dc3545', fontSize: '0.875rem' }}>
+            <p className="mt-1 mb-0">
               <strong>Reason:</strong> {trustData.blockedReason}
             </p>
           )}
-          <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', marginBottom: 0 }}>
+          <p className="form-hint mt-1 mb-0">
             Your trust score affects your ability to send messages. Report violations to keep the community safe.
           </p>
         </div>
@@ -249,25 +227,18 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned, onPremiumChanged }) =>
 
       {/* Email Verification Status */}
       {trustData && trustData.email && !trustData.emailVerified && (
-        <div style={{
-          marginTop: '1rem',
-          padding: '1rem',
-          backgroundColor: '#fff3cd',
-          borderRadius: '8px',
-          borderLeft: '4px solid #ffc107'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-            <span style={{ fontSize: '1.25rem' }}>⚠️</span>
-            <strong style={{ fontSize: '1rem' }}>Email Not Verified</strong>
+        <div className="alert alert-warning">
+          <div className="flex items-center gap-1 mb-1">
+            <strong>Email Not Verified</strong>
           </div>
-          <p style={{ fontSize: '0.875rem', color: '#856404', marginBottom: '0.75rem' }}>
+          <p className="mb-2" style={{ fontSize: 'var(--font-size-sm)' }}>
             Please verify your email address to receive notifications for messages sent to your claimed plates.
           </p>
           <EmailVerification
             userId={userId}
             email={trustData.email}
             onVerified={() => {
-              toast.success('✅ Email verified successfully!');
+              toast.success('Email verified successfully!');
               fetchTrustScore(); // Refresh to show verified status
             }}
           />
@@ -276,20 +247,10 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned, onPremiumChanged }) =>
 
       {/* Email Verified Badge */}
       {trustData && trustData.email && trustData.emailVerified && (
-        <div style={{
-          marginTop: '1rem',
-          padding: '0.75rem 1rem',
-          backgroundColor: '#d4edda',
-          borderRadius: '8px',
-          borderLeft: '4px solid #28a745',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem'
-        }}>
-          <span style={{ fontSize: '1.25rem' }}>✅</span>
+        <div className="alert alert-success flex items-center gap-2">
           <div>
-            <strong style={{ color: '#155724' }}>Email Verified</strong>
-            <p style={{ fontSize: '0.875rem', color: '#155724', margin: '0.25rem 0 0 0' }}>
+            <strong>Email Verified</strong>
+            <p className="mb-0 mt-1" style={{ fontSize: 'var(--font-size-sm)' }}>
               {trustData.email}
             </p>
           </div>
@@ -306,78 +267,47 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned, onPremiumChanged }) =>
         </>
       )}
 
-      {/* ⚠️ MVP MOCK - Premium Toggle for Testing */}
+      {/* MVP MOCK - Premium Toggle for Testing */}
       {MOCK_PREMIUM_ENABLED && subscriptionData && (
-        <div style={{
-          marginTop: '1rem',
-          padding: '1rem',
-          backgroundColor: '#fff3cd',
-          borderRadius: '8px',
-          borderLeft: '4px solid #ff9800',
-          textAlign: 'center'
-        }}>
-          <p style={{ fontSize: '0.875rem', color: '#856404', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-            🧪 MVP MOCK MODE - Testing Only
+        <div className="alert alert-warning text-center">
+          <p className="mb-2" style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)' }}>
+            MVP MOCK MODE - Testing Only
           </p>
           <button
             onClick={handleMockTogglePremium}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: '#ff9800',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: 'bold'
-            }}
+            className="btn btn-warning"
           >
             Toggle Premium (Mock)
           </button>
-          <p style={{ fontSize: '0.7rem', color: '#856404', marginTop: '0.5rem', marginBottom: 0 }}>
-            ⚠️ Remove REACT_APP_MOCK_PREMIUM=true when Stripe is configured
+          <p className="form-hint mt-1 mb-0">
+            Remove REACT_APP_MOCK_PREMIUM=true when Stripe is configured
           </p>
         </div>
       )}
 
       {/* Subscription Management */}
       {subscriptionData && (
-        <div style={{
-          marginTop: '1rem',
-          padding: '1rem',
-          backgroundColor: subscriptionData.premium ? '#fff8e1' : '#f8f9fa',
-          borderRadius: '8px',
-          borderLeft: `4px solid ${subscriptionData.premium ? '#ffc107' : '#007bff'}`
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+        <div className={`card ${subscriptionData.premium ? 'alert-warning' : ''}`}>
+          <div className="flex justify-between items-center mb-2">
             <div>
               <strong>Subscription:</strong>
               <span style={{
-                marginLeft: '0.5rem',
-                fontSize: '1.2rem',
-                fontWeight: 'bold',
-                color: subscriptionData.premium ? '#f57c00' : '#007bff'
+                marginLeft: 'var(--spacing-sm)',
+                fontSize: 'var(--font-size-lg)',
+                fontWeight: 'var(--font-weight-bold)',
+                color: subscriptionData.premium ? 'var(--color-premium)' : 'var(--color-primary)'
               }}>
-                {subscriptionData.premium ? '⭐ Premium' : 'Free'}
+                {subscriptionData.premium ? 'Premium' : 'Free'}
               </span>
             </div>
             {subscriptionData.premium && (
-              <span style={{
-                padding: '0.25rem 0.5rem',
-                backgroundColor: '#ffc107',
-                color: '#000',
-                borderRadius: '4px',
-                fontSize: '0.75rem',
-                fontWeight: 'bold'
-              }}>
-                ACTIVE
-              </span>
+              <span className="badge badge-premium">ACTIVE</span>
             )}
           </div>
 
           {subscriptionData.premium ? (
             <>
-              <p style={{ fontSize: '0.875rem', color: '#666', marginTop: '0.5rem' }}>
+              <p className="form-hint mb-2">
                 {subscriptionData.subscriptionStatus === 'active' && subscriptionData.subscriptionEndDate && (
                   <>Next billing date: {new Date(subscriptionData.subscriptionEndDate).toLocaleDateString()}</>
                 )}
@@ -385,24 +315,15 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned, onPremiumChanged }) =>
                   <>Access until: {new Date(subscriptionData.subscriptionEndDate).toLocaleDateString()}</>
                 )}
               </p>
-              <p style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.75rem' }}>
-                ✅ Custom messages • ✅ Priority support • ✅ Premium badge
+              <p className="form-hint mb-2">
+                Custom messages • Priority support • Premium badge
               </p>
               {loadingSubscription ? (
                 <LoadingSpinner message="Opening subscription management..." />
               ) : (
                 <button
                   onClick={handleManageSubscription}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    backgroundColor: '#007bff',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '0.875rem',
-                    fontWeight: 'bold'
-                  }}
+                  className="btn btn-primary"
                 >
                   Manage Subscription
                 </button>
@@ -410,10 +331,10 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned, onPremiumChanged }) =>
             </>
           ) : (
             <>
-              <p style={{ fontSize: '0.875rem', color: '#666', marginTop: '0.5rem', marginBottom: '0.75rem' }}>
+              <p className="mb-2" style={{ fontSize: 'var(--font-size-sm)' }}>
                 Upgrade to Premium for $4.99/month to unlock:
               </p>
-              <ul style={{ fontSize: '0.875rem', color: '#666', marginLeft: '1.25rem', marginBottom: '0.75rem' }}>
+              <ul className="mb-3" style={{ fontSize: 'var(--font-size-sm)', marginLeft: 'var(--spacing-lg)' }}>
                 <li>Send custom messages (not just predefined ones)</li>
                 <li>Premium badge displayed on your messages</li>
                 <li>Priority customer support</li>
@@ -424,23 +345,15 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned, onPremiumChanged }) =>
                 <button
                   onClick={handleUpgradeToPremium}
                   disabled={!ownedPlates.length}
-                  style={{
-                    padding: '0.6rem 1.5rem',
-                    backgroundColor: !ownedPlates.length ? '#ccc' : '#ffc107',
-                    color: !ownedPlates.length ? '#666' : '#000',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: !ownedPlates.length ? 'not-allowed' : 'pointer',
-                    fontSize: '1rem',
-                    fontWeight: 'bold'
-                  }}
+                  className="btn btn-premium"
+                  style={{ width: '100%' }}
                   title={!ownedPlates.length ? 'Claim a plate first to upgrade' : ''}
                 >
-                  ⭐ Upgrade to Premium
+                  Upgrade to Premium
                 </button>
               )}
               {!ownedPlates.length && (
-                <p style={{ fontSize: '0.75rem', color: '#dc3545', marginTop: '0.5rem', marginBottom: 0 }}>
+                <p className="form-hint mt-1 mb-0" style={{ color: 'var(--color-error)' }}>
                   Please claim a plate with your email before upgrading
                 </p>
               )}
@@ -450,102 +363,75 @@ const ProfilePage = ({ userId, ownedPlates, refreshOwned, onPremiumChanged }) =>
       )}
 
       {ownedPlates.length > 0 ? (
-        <>
-          <h3 style={{ marginTop: '1.5rem' }}>🚘 Your Claimed Plates</h3>
-          <ul style={{ paddingLeft: '1rem' }}>
-  {ownedPlates.map((p) => (
-    <li key={p._id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-      <span style={{ fontWeight: 'bold' }}>{p.plate}</span>
-      <button
-        onClick={() => handleUnclaim(p._id, p.plate)}
-        style={{
-          marginLeft: '1rem',
-          padding: '0.25rem 0.5rem',
-          backgroundColor: '#dc3545',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer'
-        }}
-      >
-        🗑 Remove
-      </button>
-    </li>
-  ))}
-</ul>
-          <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '1rem' }}>
-            💡 You'll receive email notifications when someone sends a message to your claimed plates.
+        <div className="card">
+          <h3 className="card-title mb-2">Your Claimed Plates</h3>
+          <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
+            {ownedPlates.map((p) => (
+              <li key={p._id} className="flex justify-between items-center mb-2">
+                <span style={{ fontWeight: 'var(--font-weight-semibold)' }}>{p.plate}</span>
+                <button
+                  onClick={() => handleUnclaim(p._id, p.plate)}
+                  className="btn btn-sm btn-error"
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="form-hint mb-0">
+            You'll receive email notifications when someone sends a message to your claimed plates.
           </p>
-        </>
+        </div>
       ) : (
-        <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-          <p style={{ color: '#555', marginBottom: '0.5rem' }}>
-            <strong>You haven't claimed any plates yet.</strong>
-          </p>
-          <p style={{ fontSize: '0.9rem', color: '#666' }}>
+        <div className="empty-state">
+          <div className="empty-state-icon">🚗</div>
+          <h3 className="empty-state-title">No plates claimed yet</h3>
+          <p className="empty-state-description">
             Claim your license plate below to receive notifications when someone sends you a message!
           </p>
         </div>
       )}
 
-      <h4 style={{ marginTop: '2rem' }}>➕ Claim a Plate</h4>
+      <div className="card">
+        <h3 className="card-title mb-3">Claim a Plate</h3>
 
-      <div style={{ marginBottom: '1rem' }}>
-        <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.9rem', color: '#555' }}>
-          License Plate Number *
-        </label>
-        <input
-          type="text"
-          placeholder="e.g. CB1234AB"
-          value={newPlate}
-          onChange={(e) => setNewPlate(e.target.value)}
-          style={{
-            padding: '0.5rem',
-            width: '100%',
-            borderRadius: '4px',
-            border: '1px solid #ccc',
-            fontSize: '1rem'
-          }}
-        />
+        <div className="form-group">
+          <label className="form-label">
+            License Plate Number
+          </label>
+          <input
+            type="text"
+            placeholder="e.g. CB1234AB"
+            value={newPlate}
+            onChange={(e) => setNewPlate(e.target.value)}
+            className="form-input"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">
+            Email Address
+          </label>
+          <input
+            type="email"
+            placeholder="your.email@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="form-input"
+          />
+          <p className="form-hint">
+            We'll email you when someone sends a message to this plate
+          </p>
+        </div>
+
+        <button
+          onClick={handleClaim}
+          className="btn btn-primary"
+          style={{ width: '100%' }}
+        >
+          Claim Plate
+        </button>
       </div>
-
-      <div style={{ marginBottom: '1rem' }}>
-        <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.9rem', color: '#555' }}>
-          Email Address * (for notifications)
-        </label>
-        <input
-          type="email"
-          placeholder="your.email@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{
-            padding: '0.5rem',
-            width: '100%',
-            borderRadius: '4px',
-            border: '1px solid #ccc',
-            fontSize: '1rem'
-          }}
-        />
-        <p style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.3rem', marginBottom: 0 }}>
-          We'll email you when someone sends a message to this plate
-        </p>
-      </div>
-
-      <button
-        onClick={handleClaim}
-        style={{
-          padding: '0.6rem 1.5rem',
-          backgroundColor: '#007bff',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          fontSize: '1rem',
-          fontWeight: 'bold'
-        }}
-      >
-        Claim Plate
-      </button>
     </div>
   );
 };

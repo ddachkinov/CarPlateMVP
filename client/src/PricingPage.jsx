@@ -121,17 +121,19 @@ const PricingPage = ({ userId, userEmail, isPremium }) => {
   }
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '1rem' }}>Choose Your Plan</h2>
-      <p style={{ textAlign: 'center', color: '#666', marginBottom: '3rem' }}>
-        Upgrade to Premium to unlock powerful features and support CarPlate
-      </p>
+    <div>
+      <div className="text-center mb-4">
+        <h2 className="card-title mb-2">Choose Your Plan</h2>
+        <p style={{ color: 'var(--color-text-secondary)' }}>
+          Upgrade to Premium to unlock powerful features and support CarPlate
+        </p>
+      </div>
 
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-        gap: '2rem',
-        marginBottom: '3rem'
+        gap: 'var(--spacing-xl)',
+        marginBottom: 'var(--spacing-2xl)'
       }}>
         {/* Free Plan */}
         <PricingCard
@@ -161,12 +163,12 @@ const PricingPage = ({ userId, userEmail, isPremium }) => {
           price="$4.99"
           period="per month"
           features={[
-            '✨ Send custom messages',
-            '✨ Premium supporter badge',
-            '✨ Priority email support',
-            '⚡ Instant notifications (coming soon)',
-            '📊 Advanced inbox features (coming soon)',
-            '💾 Extended message history (coming soon)'
+            'Send custom messages',
+            'Premium supporter badge',
+            'Priority email support',
+            'Instant notifications (coming soon)',
+            'Advanced inbox features (coming soon)',
+            'Extended message history (coming soon)'
           ]}
           limitations={[]}
           buttonText={isPremium ? 'Manage Subscription' : 'Upgrade to Premium'}
@@ -177,19 +179,14 @@ const PricingPage = ({ userId, userEmail, isPremium }) => {
       </div>
 
       {/* Feature Comparison */}
-      <div style={{
-        backgroundColor: '#f8f9fa',
-        padding: '2rem',
-        borderRadius: '8px',
-        marginTop: '2rem'
-      }}>
-        <h3 style={{ marginBottom: '1.5rem' }}>Feature Comparison</h3>
+      <div className="card" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
+        <h3 className="card-title mb-3">Feature Comparison</h3>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ borderBottom: '2px solid #dee2e6' }}>
-              <th style={{ textAlign: 'left', padding: '0.75rem' }}>Feature</th>
-              <th style={{ textAlign: 'center', padding: '0.75rem' }}>Free</th>
-              <th style={{ textAlign: 'center', padding: '0.75rem' }}>Premium</th>
+            <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+              <th style={{ textAlign: 'left', padding: 'var(--spacing-sm)' }}>Feature</th>
+              <th style={{ textAlign: 'center', padding: 'var(--spacing-sm)' }}>Free</th>
+              <th style={{ textAlign: 'center', padding: 'var(--spacing-sm)' }}>Premium</th>
             </tr>
           </thead>
           <tbody>
@@ -204,8 +201,8 @@ const PricingPage = ({ userId, userEmail, isPremium }) => {
       </div>
 
       {/* FAQ */}
-      <div style={{ marginTop: '3rem' }}>
-        <h3 style={{ marginBottom: '1.5rem' }}>Frequently Asked Questions</h3>
+      <div className="card">
+        <h3 className="card-title mb-3">Frequently Asked Questions</h3>
 
         <FAQItem
           question="Can I cancel my subscription anytime?"
@@ -245,13 +242,11 @@ const PricingCard = ({
   current
 }) => {
   return (
-    <div style={{
-      border: highlighted ? '3px solid #007bff' : '1px solid #dee2e6',
-      borderRadius: '12px',
-      padding: '2rem',
-      backgroundColor: current ? '#e7f0ff' : 'white',
+    <div className="card" style={{
+      border: highlighted ? `3px solid var(--color-primary)` : undefined,
+      backgroundColor: current ? 'var(--color-primary-subtle)' : undefined,
       position: 'relative',
-      boxShadow: highlighted ? '0 8px 24px rgba(0,123,255,0.2)' : 'none'
+      boxShadow: highlighted ? 'var(--shadow-lg)' : undefined
     }}>
       {highlighted && (
         <div style={{
@@ -259,44 +254,52 @@ const PricingCard = ({
           top: '-15px',
           left: '50%',
           transform: 'translateX(-50%)',
-          backgroundColor: '#007bff',
+          backgroundColor: 'var(--color-primary)',
           color: 'white',
-          padding: '0.25rem 1rem',
-          borderRadius: '20px',
-          fontSize: '0.875rem',
-          fontWeight: 'bold'
+          padding: 'var(--spacing-xs) var(--spacing-md)',
+          borderRadius: 'var(--radius-xl)',
+          fontSize: 'var(--font-size-xs)',
+          fontWeight: 'var(--font-weight-bold)'
         }}>
           MOST POPULAR
         </div>
       )}
 
-      <h3 style={{ marginBottom: '0.5rem', fontSize: '1.5rem' }}>{title}</h3>
-      <div style={{ marginBottom: '1.5rem' }}>
-        <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#007bff' }}>{price}</span>
-        <span style={{ color: '#666', marginLeft: '0.5rem' }}>/{period}</span>
+      <h3 className="card-title mb-1">{title}</h3>
+      <div className="mb-3">
+        <span style={{
+          fontSize: 'var(--font-size-3xl)',
+          fontWeight: 'var(--font-weight-bold)',
+          color: 'var(--color-primary)'
+        }}>
+          {price}
+        </span>
+        <span className="form-hint" style={{ marginLeft: 'var(--spacing-sm)' }}>/{period}</span>
       </div>
 
-      <ul style={{ listStyle: 'none', paddingLeft: 0, marginBottom: '2rem' }}>
+      <ul style={{ listStyle: 'none', paddingLeft: 0, marginBottom: 'var(--spacing-xl)' }}>
         {features.map((feature, index) => (
           <li key={index} style={{
-            padding: '0.5rem 0',
-            borderBottom: '1px solid #f0f0f0',
+            padding: 'var(--spacing-sm) 0',
+            borderBottom: `1px solid var(--color-border-light)`,
             display: 'flex',
-            alignItems: 'center'
+            alignItems: 'center',
+            gap: 'var(--spacing-sm)'
           }}>
-            <span style={{ color: '#28a745', marginRight: '0.5rem' }}>✓</span>
+            <span className="badge badge-success" style={{ fontSize: 'var(--font-size-xs)' }}>✓</span>
             {feature}
           </li>
         ))}
         {limitations.map((limitation, index) => (
           <li key={`limit-${index}`} style={{
-            padding: '0.5rem 0',
-            borderBottom: '1px solid #f0f0f0',
+            padding: 'var(--spacing-sm) 0',
+            borderBottom: `1px solid var(--color-border-light)`,
             display: 'flex',
             alignItems: 'center',
-            color: '#999'
+            gap: 'var(--spacing-sm)',
+            color: 'var(--color-text-muted)'
           }}>
-            <span style={{ color: '#dc3545', marginRight: '0.5rem' }}>✗</span>
+            <span className="badge badge-error" style={{ fontSize: 'var(--font-size-xs)' }}>✗</span>
             {limitation}
           </li>
         ))}
@@ -305,18 +308,8 @@ const PricingCard = ({
       <button
         onClick={buttonAction}
         disabled={buttonDisabled}
-        style={{
-          width: '100%',
-          padding: '0.75rem',
-          backgroundColor: highlighted && !buttonDisabled ? '#007bff' : '#6c757d',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          fontSize: '1rem',
-          fontWeight: 'bold',
-          cursor: buttonDisabled ? 'not-allowed' : 'pointer',
-          opacity: buttonDisabled ? 0.6 : 1
-        }}
+        className={`btn ${highlighted && !buttonDisabled ? 'btn-primary' : 'btn-secondary'}`}
+        style={{ width: '100%' }}
       >
         {buttonText}
       </button>
@@ -326,22 +319,34 @@ const PricingCard = ({
 
 // Feature Row Component
 const FeatureRow = ({ feature, free, premium }) => (
-  <tr style={{ borderBottom: '1px solid #dee2e6' }}>
-    <td style={{ padding: '0.75rem' }}>{feature}</td>
-    <td style={{ textAlign: 'center', padding: '0.75rem' }}>
-      {free ? <span style={{ color: '#28a745', fontSize: '1.25rem' }}>✓</span> : <span style={{ color: '#dc3545' }}>✗</span>}
+  <tr style={{ borderBottom: `1px solid var(--color-border)` }}>
+    <td style={{ padding: 'var(--spacing-sm)' }}>{feature}</td>
+    <td style={{ textAlign: 'center', padding: 'var(--spacing-sm)' }}>
+      {free ? (
+        <span style={{ color: 'var(--color-success)', fontSize: 'var(--font-size-lg)' }}>✓</span>
+      ) : (
+        <span style={{ color: 'var(--color-error)' }}>—</span>
+      )}
     </td>
-    <td style={{ textAlign: 'center', padding: '0.75rem' }}>
-      {premium ? <span style={{ color: '#28a745', fontSize: '1.25rem' }}>✓</span> : <span style={{ color: '#dc3545' }}>✗</span>}
+    <td style={{ textAlign: 'center', padding: 'var(--spacing-sm)' }}>
+      {premium ? (
+        <span style={{ color: 'var(--color-success)', fontSize: 'var(--font-size-lg)' }}>✓</span>
+      ) : (
+        <span style={{ color: 'var(--color-error)' }}>—</span>
+      )}
     </td>
   </tr>
 );
 
 // FAQ Item Component
 const FAQItem = ({ question, answer }) => (
-  <div style={{ marginBottom: '1.5rem' }}>
-    <h4 style={{ marginBottom: '0.5rem', color: '#007bff' }}>{question}</h4>
-    <p style={{ color: '#666', marginLeft: '1rem' }}>{answer}</p>
+  <div className="mb-3">
+    <h4 className="mb-1" style={{ color: 'var(--color-primary)', fontSize: 'var(--font-size-base)' }}>
+      {question}
+    </h4>
+    <p className="mb-0" style={{ color: 'var(--color-text-secondary)', marginLeft: 'var(--spacing-md)' }}>
+      {answer}
+    </p>
   </div>
 );
 

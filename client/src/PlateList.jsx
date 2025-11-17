@@ -67,24 +67,18 @@ const PlateList = ({ plates, messages }) => {
   };
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
-      <h2>📥 Inbox</h2>
+    <div>
+      <h2 className="card-title mb-3">Your Messages</h2>
       {plates.length === 0 ? (
-        <div style={{
-          textAlign: 'center',
-          padding: '3rem 2rem',
-          backgroundColor: '#f8f9fa',
-          borderRadius: '8px',
-          marginTop: '2rem'
-        }}>
-          <div style={{ fontSize: '48px', marginBottom: '1rem' }}>📬</div>
-          <h3 style={{ color: '#666', marginBottom: '0.5rem' }}>No messages yet</h3>
-          <p style={{ color: '#999', fontSize: '14px' }}>
+        <div className="empty-state">
+          <div className="empty-state-icon">✉</div>
+          <h3 className="empty-state-title">No messages yet</h3>
+          <p className="empty-state-description">
             Messages sent to your claimed plates will appear here
           </p>
         </div>
       ) : (
-        <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
+        <div>
           {plates.map((p) => {
             const currentPlate = normalizePlate(p.plate);
             const relatedMessages = messages.filter(
@@ -92,95 +86,61 @@ const PlateList = ({ plates, messages }) => {
             );
 
             return (
-              <li key={currentPlate} style={{ marginBottom: '1.5rem' }}>
-                <h3 style={{ color: '#007bff', marginBottom: '0.5rem' }}>
+              <div key={currentPlate} className="card">
+                <h3 className="card-title" style={{ color: 'var(--color-primary)' }}>
                   {currentPlate}
                 </h3>
-                <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
-                {relatedMessages.map((m) => {
-  const isNew = (Date.now() - new Date(m.createdAt).getTime()) < 5 * 60 * 1000;
-  const wasUnread = m.isRead === false;
+                <ul className="message-list">
+                  {relatedMessages.map((m) => {
+                    const isNew = (Date.now() - new Date(m.createdAt).getTime()) < 5 * 60 * 1000;
+                    const wasUnread = m.isRead === false;
 
-  return (
-    <li
-      key={m._id}
-      style={{
-        backgroundColor: isNew || wasUnread ? '#e6f7ff' : '#f5f5f5',
-        fontWeight: isNew || wasUnread ? 'bold' : 'normal',
-        padding: '0.75rem',
-        borderRadius: '8px',
-        marginBottom: '0.5rem',
-        fontSize: '0.95rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderLeft: wasUnread ? '4px solid #1890ff' : 'none'
-      }}
-    >
-                      <div>
-                        <div style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                          <span>{m.senderId === userId ? 'You' : `From ${m.senderId}`}</span>
-                          {m.senderPremium && (
-                            <span style={{
-                              padding: '0.125rem 0.4rem',
-                              backgroundColor: '#ffc107',
-                              color: '#000',
-                              borderRadius: '4px',
-                              fontSize: '0.65rem',
-                              fontWeight: 'bold'
-                            }}>
-                              ⭐ PREMIUM
-                            </span>
-                          )}
+                    return (
+                      <li
+                        key={m._id}
+                        className={`message-item ${wasUnread || isNew ? 'unread' : ''}`}
+                      >
+                        <div className="message-content">
+                          <div className="message-sender">
+                            <span>{m.senderId === userId ? 'You' : `From ${m.senderId}`}</span>
+                            {m.senderPremium && (
+                              <span className="badge badge-premium">PREMIUM</span>
+                            )}
+                          </div>
+                          <div className="message-text">{m.message}</div>
+                          <div className="message-time">
+                            {formatRelativeTime(m.createdAt)}
+                          </div>
                         </div>
-                        <div>{m.message}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#888' }}>
-  {formatRelativeTime(m.createdAt)}
-</div>
-                      </div>
 
-                      {m.senderId !== userId && (
-                        reportedMessages.has(m._id) ? (
-                          <button
-                            disabled
-                            style={{
-                              padding: '4px 8px',
-                              backgroundColor: '#ffcccc',
-                              border: '1px solid red',
-                              color: 'red',
-                              fontSize: '0.75rem',
-                              borderRadius: '6px',
-                              opacity: 0.7,
-                              cursor: 'not-allowed'
-                            }}
-                          >
-                            Reported
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleReport(m._id, m.senderId)}
-                            style={{
-                              padding: '4px 8px',
-                              border: '1px solid red',
-                              color: 'red',
-                              fontSize: '0.75rem',
-                              borderRadius: '6px',
-                              backgroundColor: 'white',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            Report
-                          </button>
-                        )
-                      )}
-                    </li> 
+                        {m.senderId !== userId && (
+                          <div className="message-actions">
+                            {reportedMessages.has(m._id) ? (
+                              <button
+                                disabled
+                                className="btn btn-sm btn-error"
+                                style={{ opacity: 0.5 }}
+                              >
+                                Reported
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleReport(m._id, m.senderId)}
+                                className="btn btn-sm btn-error"
+                              >
+                                Report
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </li>
                     );
-                })}
-                </ul> 
-              </li>
+                  })}
+                </ul>
+              </div>
             );
           })}
-        </ul>
+        </div>
       )}
     </div>
   );

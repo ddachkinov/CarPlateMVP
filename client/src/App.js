@@ -151,27 +151,10 @@ useEffect(() => {
         });
       } else if (err.response?.status === 402) {
         // Premium required
-        toast.error(
-          <div>
-            <p>{err.response.data.error}</p>
-            <button
-              onClick={() => setView('premium')}
-              style={{
-                marginTop: '0.5rem',
-                padding: '0.5rem 1rem',
-                backgroundColor: '#ffc107',
-                color: '#000',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: 'bold'
-              }}
-            >
-              Upgrade to Premium
-            </button>
-          </div>,
-          { autoClose: false }
-        );
+        toast.error(err.response.data.error, {
+          autoClose: 5000,
+          onClick: () => setView('premium')
+        });
       } else if (err.response?.status === 400) {
         // Validation error
         toast.error(err.response.data.error || 'Invalid input. Please check your message.');
@@ -191,7 +174,7 @@ useEffect(() => {
   }
 
   return (
-    <div>
+    <div className="app-container">
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -205,113 +188,81 @@ useEffect(() => {
         theme="light"
       />
 
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '1rem',
-          margin: '2rem 0'
-        }}
-      >
+      {/* Header */}
+      <header className="app-header">
+        <h1 className="app-title">CarPlate</h1>
+      </header>
+
+      {/* Navigation */}
+      <nav className="nav-container">
         <button
           onClick={() => setView('inbox')}
-          style={{
-            padding: '0.5rem 1.5rem',
-            borderRadius: '6px',
-            border: view === 'inbox' ? '2px solid #007bff' : '1px solid #ccc',
-            backgroundColor: view === 'inbox' ? '#e7f0ff' : 'white',
-            color: view === 'inbox' ? '#007bff' : '#555',
-            fontWeight: view === 'inbox' ? 'bold' : 'normal',
-            cursor: 'pointer'
-          }}
+          className={`nav-button ${view === 'inbox' ? 'active' : ''}`}
         >
-          📥 Inbox
+          Inbox
         </button>
 
         <button
           onClick={() => setView('profile')}
-          style={{
-            padding: '0.5rem 1.5rem',
-            borderRadius: '6px',
-            border: view === 'profile' ? '2px solid #007bff' : '1px solid #ccc',
-            backgroundColor: view === 'profile' ? '#e7f0ff' : 'white',
-            color: view === 'profile' ? '#007bff' : '#555',
-            fontWeight: view === 'profile' ? 'bold' : 'normal',
-            cursor: 'pointer'
-          }}
+          className={`nav-button ${view === 'profile' ? 'active' : ''}`}
         >
-          👤 Profile
+          Profile
         </button>
 
         <button
           onClick={() => setView('premium')}
-          style={{
-            padding: '0.5rem 1.5rem',
-            borderRadius: '6px',
-            border: view === 'premium' ? '2px solid #ffc107' : '1px solid #ccc',
-            backgroundColor: view === 'premium' ? '#fff8e1' : 'white',
-            color: view === 'premium' ? '#f57c00' : '#555',
-            fontWeight: view === 'premium' ? 'bold' : 'normal',
-            cursor: 'pointer'
-          }}
+          className={`nav-button premium ${view === 'premium' ? 'active' : ''}`}
         >
-          ⭐ Premium
+          Premium
         </button>
 
         <button
           onClick={() => setView('admin')}
-          style={{
-            padding: '0.5rem 1.5rem',
-            borderRadius: '6px',
-            border: view === 'admin' ? '2px solid #dc3545' : '1px solid #ccc',
-            backgroundColor: view === 'admin' ? '#ffe6e6' : 'white',
-            color: view === 'admin' ? '#dc3545' : '#555',
-            fontWeight: view === 'admin' ? 'bold' : 'normal',
-            cursor: 'pointer'
-          }}
+          className={`nav-button ${view === 'admin' ? 'active' : ''}`}
         >
-          🛡️ Admin
+          Admin
         </button>
-      </div>
+      </nav>
 
-      <h1>🚗 CarPlate</h1>
+      {/* Main Content */}
+      <main className="content-wrapper">
+        {/* Form only in inbox */}
+        {view === 'inbox' && (
+          <PlateForm
+            plate={plate}
+            setPlate={setPlate}
+            message={message}
+            setMessage={setMessage}
+            handleSubmit={handleSubmit}
+            loading={loading}
+            isGuest={!ownedPlates.length}
+            isPremium={isPremium}
+            onUpgradeClick={() => setView('premium')}
+          />
+        )}
 
-      {/* 🧩 FORM ONLY IN INBOX */}
-      {view === 'inbox' && (
-        <PlateForm
-          plate={plate}
-          setPlate={setPlate}
-          message={message}
-          setMessage={setMessage}
-          handleSubmit={handleSubmit}
-          loading={loading}
-          isGuest={!ownedPlates.length}
-          isPremium={isPremium}
-          onUpgradeClick={() => setView('premium')}
-        />
-      )}
+        {loading ? (
+          <LoadingSpinner message="Sending message..." />
+        ) : (
+          <>
+            {view === 'inbox' && <PlateList plates={inboxPlates} messages={inboxMessages} />}
 
-      {loading ? (
-        <LoadingSpinner message="Sending message..." />
-      ) : (
-        <>
-          {view === 'inbox' && <PlateList plates={inboxPlates} messages={inboxMessages} />}
+            {view === 'profile' && (
+              <ProfilePage
+                userId={userId}
+                ownedPlates={ownedPlates}
+                refreshOwned={loadOwnedPlates}
+                onPlateChanged={handlePlateChanged}
+                onPremiumChanged={loadPremiumStatus}
+              />
+            )}
 
-          {view === 'profile' && (
-            <ProfilePage
-              userId={userId}
-              ownedPlates={ownedPlates}
-              refreshOwned={loadOwnedPlates}
-              onPlateChanged={handlePlateChanged}
-              onPremiumChanged={loadPremiumStatus}
-            />
-          )}
+            {view === 'premium' && <PricingPage userId={userId} userEmail={userEmail} isPremium={isPremium} />}
 
-          {view === 'premium' && <PricingPage userId={userId} userEmail={userEmail} isPremium={isPremium} />}
-
-          {view === 'admin' && <AdminDashboard />}
-        </>
-      )}
+            {view === 'admin' && <AdminDashboard />}
+          </>
+        )}
+      </main>
 
       {/* Floating Feedback Button - appears on all pages */}
       <FeedbackButton userId={userId} />
